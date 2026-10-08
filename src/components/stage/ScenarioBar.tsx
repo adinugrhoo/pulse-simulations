@@ -1,6 +1,6 @@
 "use client";
 
-import { SCENARIO } from "@/sim/scenario";
+import { SCENARIOS } from "@/sim/scenario";
 import { useSim } from "@/sim/store";
 import { cn } from "@/lib/cn";
 import { Popover } from "./Popover";
@@ -16,6 +16,8 @@ const countChip = (count?: string) =>
 
 /** Header controls: step runner, scenario dropdown, event log dropdown. */
 export function ScenarioBar() {
+  const phase = useSim((s) => s.phase);
+  const SCENARIO = SCENARIOS[phase];
   const stepIndex = useSim((s) => s.stepIndex);
   const log = useSim((s) => s.log);
   const runStep = useSim((s) => s.runStep);

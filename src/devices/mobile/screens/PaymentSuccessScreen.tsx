@@ -1,5 +1,6 @@
 "use client";
 
+import { grandTotal as grandTotalOf } from "@/sim/bill";
 import Image from "next/image";
 import { figtree } from "@/lib/fonts";
 import { cn } from "@/lib/cn";
@@ -29,7 +30,7 @@ export function PaymentSuccessScreen() {
 
   const serviceCharge = receipt.amount * 0.05;
   const gst = receipt.amount * 0.09;
-  const grandTotal = receipt.amount + serviceCharge + gst;
+  const grandTotal = grandTotalOf(receipt.amount);
 
   return (
     <div className={cn(figtree.className, "relative flex size-full flex-col bg-[#e6e7ed]")}>

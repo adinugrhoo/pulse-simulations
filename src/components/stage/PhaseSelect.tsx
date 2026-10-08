@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/cn";
+import { PHASES } from "@/sim/phases";
+import { useSim } from "@/sim/store";
 import { Popover } from "./Popover";
 
-const PHASES = [
-  { id: "1.0", label: "Phase 1.0", chip: "Design Ready", tone: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30" },
-  { id: "2.0", label: "Phase 2.0", chip: "Ongoing", tone: "bg-amber-500/15 text-amber-300 ring-amber-500/30" },
-] as const;
-
-type PhaseId = (typeof PHASES)[number]["id"];
-
-/** Header dropdown: which build phase is currently in view, purely informational. */
+/** Header dropdown: picks the build phase, which swaps the scenario the stepper runs. */
 export function PhaseSelect() {
-  const [phaseId, setPhaseId] = useState<PhaseId>("1.0");
+  const phaseId = useSim((s) => s.phase);
+  const setPhase = useSim((s) => s.setPhase);
   const phase = PHASES.find((p) => p.id === phaseId)!;
 
   return (
@@ -32,7 +27,7 @@ export function PhaseSelect() {
             <li key={p.id}>
               <button
                 onClick={() => {
-                  setPhaseId(p.id);
+                  setPhase(p.id);
                   close();
                 }}
                 className={cn(

@@ -1,10 +1,18 @@
 import { produce } from "immer";
+import { grandTotal, platformFee } from "./bill";
 import type { SimEvent } from "./events";
 import type { SimState } from "./state";
-import type { CartLine, Order, Signal, Table } from "./types";
+import type { CartLine, Order, Payment, Signal, Table } from "./types";
 
 const lineTotal = (l: CartLine) => l.unitPrice * l.qty;
 const cartTotal = (lines: CartLine[]) => lines.reduce((s, l) => s + lineTotal(l), 0);
+
+const clock = () => new Date().toTimeString().slice(0, 8);
+
+/** Append a payment to a table's ledger. */
+const record = (draft: SimState, table: Table, p: Omit<Payment, "id" | "time">) => {
+  (table.payments ??= []).push({ ...p, id: `SP-${74584593 + draft.tick}-0${table.payments.length + 1}39`, time: clock() });
+};
 
 const tableOf = (draft: SimState, tableId?: string): Table | undefined =>
   draft.tables.find((t) => t.id === tableId);
@@ -16,7 +24,7 @@ const recalcTableBill = (draft: SimState, tableId: string) => {
   const open = draft.orders.filter(
     (o) => o.tableId === tableId && o.status !== "rejected" && o.status !== "paid",
   );
-  table.totalBill = open.length ? open.reduce((s, o) => s + o.total, 0) : undefined;
+  table.totalBill = open.length ? grandTotal(open.reduce((s, o) => s + o.total, 0)) : undefined;
 };
 
 const signal = (draft: SimState, s: Omit<Signal, "id" | "tick">) => {
@@ -104,12 +112,14 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         draft.customer.cart = [];
         draft.waiter.selectedOrderId = order.id;
         recalcTableBill(draft, tableId);
-        signal(draft, {
-          device: "tablet",
-          kind: "success",
-          title: `New order · ${tableOf(draft, tableId)?.label ?? tableId}`,
-          body: `${order.lines.length} item(s) · ${order.total.toFixed(2)}`,
-        });
+        // the first order turns a scanned (allocated) table into a seated one, so its card carries the bill
+        const seated = tableOf(draft, tableId);
+        if (seated && (seated.status === "allocated" || seated.status === "vacant")) {
+          seated.status = "occupied";
+          seated.guestName = draft.customer.guestName ?? seated.guestName ?? "Guest";
+          seated.guests = seated.guests ?? 1;
+          seated.seatedMinutes = seated.seatedMinutes ?? 0;
+        }
         break;
       }
 
@@ -128,11 +138,6 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
       case "customer/request-bill": {
         const table = tableOf(draft, draft.customer.tableId);
         if (table) table.billRequested = true;
-        signal(draft, {
-          device: "tablet",
-          kind: "alert",
-          title: `Bill requested · ${table?.label ?? "table"}`,
-        });
         break;
       }
 
@@ -143,8 +148,20 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         const tableOrders = draft.orders.filter(
           (o) => o.tableId === tableId && o.status !== "rejected" && o.status !== "paid",
         );
-        const amount = table.totalBill ?? tableOrders.reduce((s, o) => s + o.total, 0);
+        const items = tableOrders.reduce((s, o) => s + o.total, 0);
+        // a part-paid table settles what is left, so the full bill is what was paid and owed together
+        const amount =
+          table.status === "partial"
+            ? Math.round(((table.paidBill ?? 0) + (table.balance ?? 0)) * 100) / 100
+            : (table.totalBill ?? grandTotal(items));
+        draft.customer.split = undefined;
 
+        record(draft, table, {
+          method: "Visa",
+          amount: Math.round((amount - (table.status === "partial" ? (table.paidBill ?? 0) : 0)) * 100) / 100,
+          guest: draft.customer.guestName ?? table.guestName ?? "Guest",
+          splitType: "Full",
+        });
         table.status = "billed";
         table.paidBill = amount;
         table.totalBill = undefined;
@@ -159,7 +176,8 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
           orderId: `PAY-${draft.tick}`,
           queueNumber: String(1000 + (draft.tick % 9000)),
           tableLabel: table.label,
-          amount,
+          // items only: the receipt screen adds service and GST itself
+          amount: items,
           lines: tableOrders.flatMap((o) => o.lines),
           paidAtTick: draft.tick,
         };
@@ -173,10 +191,103 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         break;
       }
 
+      case "customer/start-split": {
+        draft.customer.split = event.plan;
+        break;
+      }
+
+      case "customer/clear-split": {
+        draft.customer.split = undefined;
+        break;
+      }
+
+      case "customer/pay-share": {
+        const tableId = draft.customer.tableId;
+        const table = tableOf(draft, tableId);
+        const split = draft.customer.split;
+        if (!table || !tableId || !split) break;
+        const tableOrders = draft.orders.filter(
+          (o) => o.tableId === tableId && o.status !== "rejected" && o.status !== "paid",
+        );
+        const items = tableOrders.reduce((s, o) => s + o.total, 0);
+        const wasPartial = table.status === "partial";
+        const grand = wasPartial
+          ? Math.round(((table.paidBill ?? 0) + (table.balance ?? 0)) * 100) / 100
+          : (table.totalBill ?? grandTotal(items));
+        const already = wasPartial ? (table.paidBill ?? 0) : 0;
+        const share = Math.min(split.share, Math.round((grand - already) * 100) / 100);
+
+        record(draft, table, {
+          method: "Visa",
+          amount: share,
+          guest: draft.customer.guestName ?? table.guestName ?? "Guest",
+          splitType: "Custom",
+        });
+        table.status = "partial";
+        table.paidBill = Math.round((already + share) * 100) / 100;
+        table.balance = Math.round((grand - table.paidBill) * 100) / 100;
+        table.totalBill = undefined;
+        table.billRequested = false;
+
+        draft.customer.lastPartial = {
+          orderId: `PAY-${draft.tick}`,
+          tableLabel: table.label,
+          items,
+          grand,
+          share,
+          fee: platformFee(share),
+          paid: table.paidBill,
+          balance: table.balance,
+          lines: tableOrders.flatMap((o) => o.lines),
+          tick: draft.tick,
+        };
+        draft.customer.split = undefined;
+        break;
+      }
+
       case "waiter/select-table": {
         draft.waiter.selectedTableId = event.tableId;
+        draft.waiter.openTableId = event.tableId;
         const table = tableOf(draft, event.tableId);
         if (table) table.assistanceRequested = false;
+        break;
+      }
+
+      case "waiter/close-order-detail": {
+        draft.waiter.openTableId = undefined;
+        break;
+      }
+
+      case "waiter/open-pos": {
+        draft.waiter.selectedTableId = event.tableId;
+        draft.waiter.openTableId = event.tableId;
+        break;
+      }
+
+      case "waiter/close-pos":
+        break;
+
+      case "waiter/increment-cart-line": {
+        const line = draft.waiter.cart.find((l) => l.lineId === event.lineId);
+        if (line) line.qty += 1;
+        break;
+      }
+
+      case "waiter/decrement-cart-line": {
+        draft.waiter.cart = draft.waiter.cart.flatMap((l) =>
+          l.lineId !== event.lineId ? [l] : l.qty > 1 ? [{ ...l, qty: l.qty - 1 }] : [],
+        );
+        break;
+      }
+
+      case "waiter/remove-cart-line": {
+        draft.waiter.cart = draft.waiter.cart.filter((l) => l.lineId !== event.lineId);
+        break;
+      }
+
+      case "waiter/replace-cart-line": {
+        const i = draft.waiter.cart.findIndex((l) => l.lineId === event.lineId);
+        if (i >= 0) draft.waiter.cart[i] = { ...event.line, lineId: event.lineId };
         break;
       }
 
@@ -187,7 +298,17 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
 
       case "waiter/add-to-cart": {
         draft.waiter.selectedTableId = event.tableId;
-        draft.waiter.cart.push({ ...event.line, lineId: `wl-${draft.tick}` });
+        // the POS bucket merges repeat taps of one dish (same options, no notes) into a single line
+        const sameMods = (a?: string[], b?: string[]) => (a ?? []).join("|") === (b ?? []).join("|");
+        const existing = draft.waiter.cart.find(
+          (l) =>
+            l.itemId === event.line.itemId &&
+            !l.notes &&
+            !event.line.notes &&
+            sameMods(l.modifiers, event.line.modifiers),
+        );
+        if (existing) existing.qty += event.line.qty;
+        else draft.waiter.cart.push({ ...event.line, lineId: `wl-${draft.tick}` });
         break;
       }
 
@@ -205,11 +326,13 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         draft.orders.unshift(order);
         draft.waiter.cart = [];
         recalcTableBill(draft, event.tableId);
-        signal(draft, {
-          device: "mobile",
-          kind: "info",
-          title: "Waiter added items to your order",
-        });
+        if (event.tableId === draft.customer.tableId) {
+          signal(draft, {
+            device: "mobile",
+            kind: "info",
+            title: "Waiter added items to your order",
+          });
+        }
         break;
       }
 
@@ -234,12 +357,53 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
             o.status = "paid";
           });
         if (table) {
+          const before = table.status === "partial" ? (table.paidBill ?? 0) : 0;
+          const amount = Math.round((event.amount - before) * 100) / 100;
+          record(draft, table, {
+            method: event.method ?? "Cash",
+            amount,
+            guest: table.guestName ?? "Guest",
+            splitType: "Full",
+            tendered: event.tendered,
+          });
           table.status = "billed";
           table.paidBill = event.amount;
           table.totalBill = undefined;
           table.billRequested = false;
         }
         signal(draft, { device: "mobile", kind: "success", title: "Bill settled" });
+        break;
+      }
+
+      case "waiter/open-table": {
+        const table = tableOf(draft, event.tableId);
+        if (!table || (table.status !== "vacant" && table.status !== "allocated")) break;
+        table.status = "occupied";
+        table.guests = event.guests;
+        table.guestName = event.guestName;
+        table.phone = event.phone;
+        table.seatedMinutes = 0;
+        delete table.lastSession;
+        // straight into the order detail, which starts with no orders
+        draft.waiter.selectedTableId = event.tableId;
+        draft.waiter.openTableId = event.tableId;
+        break;
+      }
+
+      case "waiter/close-table": {
+        const table = tableOf(draft, event.tableId);
+        if (table) {
+          // back to idle: only the identity of the table survives
+          const { id, label, section } = table;
+          // a table that was paid keeps a trace of that party until the next one sits down
+          const lastSession = table.status === "billed" ? { paidBill: table.paidBill ?? 0, minutesAgo: 0 } : undefined;
+          Object.keys(table).forEach((k) => delete (table as Record<string, unknown>)[k]);
+          Object.assign(table, { id, label, section, status: "vacant", ...(lastSession ? { lastSession } : {}) });
+        }
+        // the next party starts on an empty order list
+        draft.orders = draft.orders.filter((o) => o.tableId !== event.tableId);
+        if (draft.waiter.openTableId === event.tableId) draft.waiter.openTableId = undefined;
+        if (draft.waiter.selectedTableId === event.tableId) draft.waiter.selectedTableId = undefined;
         break;
       }
 

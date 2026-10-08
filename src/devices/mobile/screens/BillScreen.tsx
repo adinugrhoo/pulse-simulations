@@ -1,11 +1,14 @@
 "use client";
 
+import { grandTotal as grandTotalOf, platformFee } from "@/sim/bill";
 import Image from "next/image";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { figtree } from "@/lib/fonts";
 import { cn } from "@/lib/cn";
 import { useSim } from "@/sim/store";
 import { MobileTabBar } from "../MobileTabBar";
+import type { SplitPlan } from "@/sim/types";
+import { ChooseSplitSheet, SplitBillSheet } from "./SplitSheets";
 
 const ASSET = "/figma/mobile-bill-v2";
 const CART_ASSET = "/figma/mobile-cart";
@@ -81,6 +84,12 @@ export function BillScreen() {
   const tableId = useSim((s) => s.customer.tableId);
   const tableLabel = useSim((s) => s.tables.find((t) => t.id === s.customer.tableId)?.label ?? "Table");
   const allOrders = useSim((s) => s.orders);
+  const phase = useSim((s) => s.phase);
+  const split = useSim((s) => s.customer.split);
+  const table = useSim((s) => s.tables.find((t) => t.id === s.customer.tableId));
+  /** Phase 2.0 split flow: which sheet is up, and which split type the second one opens on. */
+  const [sheet, setSheet] = useState<"choose" | "split" | null>(null);
+  const [mode, setMode] = useState<SplitPlan["mode"]>("equal");
 
   const orders = useMemo(
     () => allOrders.filter((o) => o.tableId === tableId && o.status !== "rejected" && o.status !== "paid"),
@@ -91,13 +100,25 @@ export function BillScreen() {
   const itemTotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
   const serviceCharge = itemTotal * 0.05;
   const gst = itemTotal * 0.09;
-  const grandTotal = itemTotal + serviceCharge + gst;
+  const grandTotal = grandTotalOf(itemTotal);
+
+  const splitting = phase === "2.0";
+  /** Someone already paid their share: what is left is the balance. */
+  const partial = splitting && table?.status === "partial";
+  const paidSoFar = partial ? (table?.paidBill ?? 0) : 0;
+  const balance = partial ? (table?.balance ?? 0) : 0;
+  const total = partial ? paidSoFar + balance : grandTotal;
+  /** What this customer pays now: their split share, the balance, or the whole bill. */
+  const base = split ? split.share : partial ? balance : grandTotal;
+  const fee = split || partial ? platformFee(base) : 0;
+  const payable = base + fee;
+  const partWay = Boolean(split) && base < grandTotal - 0.005;
 
   /** Ticks since the earliest open order on this table — the frame's running order clock. */
   const firstTick = orders.length ? Math.min(...orders.map((o) => o.placedAtTick)) : tick;
 
   const refresh = () => dispatch({ type: "sim/navigate", mobile: "bill" });
-  const payBill = () => dispatch({ type: "customer/pay-bill" });
+  const payBill = () => dispatch({ type: partWay ? "customer/pay-share" : "customer/pay-bill" });
 
   return (
     <div className={cn(figtree.className, "relative flex size-full flex-col bg-[#e6e7ed]")}>
@@ -184,9 +205,32 @@ export function BillScreen() {
                 <p className="text-[18px] leading-6 font-bold whitespace-nowrap text-[#24242e]">Grand Total</p>
                 <p className="flex items-start gap-0.5 whitespace-nowrap text-[#24242e]">
                   <span className="text-[15px] leading-6">SGD</span>
-                  <span className="text-[18px] leading-6 font-bold">{fmt(grandTotal)}</span>
+                  <span className="text-[18px] leading-6 font-bold">{fmt(total)}</span>
                 </p>
               </div>
+
+              {split || partial ? (
+                <>
+                  <div className="h-px w-full border-t border-dotted border-[#c3c4cf]" />
+                  <div className="flex w-[311px] flex-col items-start gap-0.5">
+                    {partial ? <AmountRow label="Paid" amount={paidSoFar} muted /> : null}
+                    <AmountRow label={partial ? "Balance" : "Your share"} amount={base} muted />
+                    <AmountRow label="Platform fee" amount={fee} prefix="+ SGD" muted>
+                      <Image src={`${ASSET}/info.svg`} alt="" width={16} height={16} className="size-4 shrink-0" />
+                      <span className="text-xs text-[#7b7d8d] underline decoration-dotted underline-offset-2">(Optional)</span>
+                    </AmountRow>
+                  </div>
+                  <div className="flex w-full items-start justify-between">
+                    <p className="text-[18px] leading-6 font-bold whitespace-nowrap text-[#24242e]">
+                      {partial ? "Balance Payable" : "Your Payable"}
+                    </p>
+                    <p className="flex items-start gap-0.5 whitespace-nowrap text-[#24242e]">
+                      <span className="text-[15px] leading-6">SGD</span>
+                      <span className="text-[18px] leading-6 font-bold">{fmt(payable)}</span>
+                    </p>
+                  </div>
+                </>
+              ) : null}
             </div>
 
             <Image
@@ -198,7 +242,24 @@ export function BillScreen() {
             />
           </div>
 
-          {/* split the bill — rendered per the frame; the sim settles one bill, so it is inert */}
+          {/* split the bill: live in Phase 2.0, inert in Phase 1.0 where the sim settles one bill */}
+          {partial ? null : split ? (
+            <div className="flex w-[343px] flex-col items-center gap-4 rounded-[20px] border border-white/20 bg-white px-4 py-5 drop-shadow-[0px_4px_2px_rgba(0,0,0,0.1)]">
+              <p className="w-full text-sm leading-5 font-bold text-[#24242e]">
+                {split.mode === "equal" ? "Even Splitting Initiated" : "Custom Splitting Initiated"}
+              </p>
+              <div className="flex w-full items-center justify-center gap-1 rounded-xl border-b-[3px] border-[#43263c] bg-[#efe6ed] py-2.5 text-sm leading-5 text-[#24242e]">
+                <span>{split.name}&apos;s Share</span>
+                <span className="font-bold">SGD {fmt(split.share)}</span>
+              </div>
+              <button
+                onClick={() => setSheet("choose")}
+                className="text-sm leading-5 text-[#4a4857] underline decoration-dashed underline-offset-4"
+              >
+                Willing to Split Differently?
+              </button>
+            </div>
+          ) : (
           <div className="flex w-[343px] flex-col items-center rounded-[20px] border border-white/20 bg-white px-4 py-5 drop-shadow-[0px_4px_2px_rgba(0,0,0,0.1)]">
             <div className="flex w-[311px] items-start justify-center gap-1">
               <div className="relative size-10 shrink-0 overflow-hidden">
@@ -220,10 +281,15 @@ export function BillScreen() {
             <div className="relative h-8 w-full">
               <Image src={`${ASSET}/split-divider.svg`} alt="" fill className="object-fill" />
             </div>
-            <div className="flex items-start justify-center rounded-xl bg-[#e6e7ed] px-[114.5px] py-2.5">
-              <p className="w-[82px] text-sm leading-5 whitespace-nowrap text-[#24242e]">Split the Bill</p>
-            </div>
+            <button
+              onClick={() => splitting && setSheet("choose")}
+              disabled={!splitting}
+              className="flex w-full items-center justify-center rounded-xl bg-[#e6e7ed] py-2.5 text-sm leading-5 whitespace-nowrap text-[#24242e] transition enabled:active:scale-[0.98]"
+            >
+              Split the Bill
+            </button>
           </div>
+          )}
         </div>
       </div>
 
@@ -236,11 +302,32 @@ export function BillScreen() {
             lines.length === 0 && "opacity-40",
           )}
         >
-          Pay&nbsp; SGD {fmt(grandTotal)}
+          {partial ? "Pay Balance" : "Pay"}&nbsp; SGD {fmt(payable)}
         </button>
       </div>
 
       <MobileTabBar active="bill" badge="bill" />
+
+      {sheet === "choose" ? (
+        <ChooseSplitSheet
+          onPick={(m) => {
+            setMode(m);
+            setSheet("split");
+          }}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
+      {sheet === "split" ? (
+        <SplitBillSheet
+          grand={grandTotal}
+          initial={mode}
+          onClose={() => setSheet(null)}
+          onConfirm={(plan) => {
+            setSheet(null);
+            dispatch({ type: "customer/start-split", plan });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

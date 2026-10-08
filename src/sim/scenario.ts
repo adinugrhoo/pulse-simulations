@@ -1,6 +1,8 @@
 import type { SimEvent } from "./events";
 import type { SimState } from "./state";
+import type { PhaseId } from "./phases";
 import { DEFAULT_TABLE_ID, SEED_MENU } from "./seed";
+import { MENU_CATALOG } from "./menuCatalog";
 
 export type Step = {
   id: string;
@@ -17,8 +19,8 @@ const item = (id: string, qty = 1) => {
   return { itemId: m.id, name: m.name, unitPrice: m.price, qty };
 };
 
-/** Happy-path script. Extend as each Figma screen is wired in. */
-export const SCENARIO: Step[] = [
+/** Phase 1.0 happy-path script. Extend as each Figma screen is wired in. */
+const SCENARIO_1: Step[] = [
   {
     id: "s1",
     title: "Customer logs in",
@@ -78,7 +80,7 @@ export const SCENARIO: Step[] = [
     id: "s9",
     title: "Customer requests the bill",
     actor: "customer",
-    expect: "Tablet flags the table with a bill request",
+    expect: "Customer sees the bill; the tablet stays on the floor",
     event: { type: "customer/request-bill" },
   },
   {
@@ -89,6 +91,68 @@ export const SCENARIO: Step[] = [
     event: { type: "customer/pay-bill" },
   },
 ];
+
+const dish = (id: string, qty = 1) => {
+  const d = MENU_CATALOG.find((x) => x.id === id)!;
+  return { itemId: d.id, name: d.name, unitPrice: d.price, qty };
+};
+
+/** Phase 2.0: the waiter rings an order through the full-screen POS page. */
+const SCENARIO_2: Step[] = [
+  {
+    id: "p2-1",
+    title: "Customer is seated and logs in",
+    actor: "customer",
+    expect: "Tablet shows the table as open with the guest name",
+    event: { type: "customer/login", guestName: "Adi", guests: 2 },
+  },
+  {
+    id: "p2-2",
+    title: "Waiter opens the table",
+    actor: "waiter",
+    expect: "Order detail dialog opens over the floor plan",
+    event: { type: "waiter/select-table", tableId: DEFAULT_TABLE_ID },
+  },
+  {
+    id: "p2-3",
+    title: "Waiter taps Add Order",
+    actor: "waiter",
+    expect: "Tablet goes full screen on the POS order page",
+    event: { type: "waiter/open-pos", tableId: DEFAULT_TABLE_ID },
+  },
+  {
+    id: "p2-4",
+    title: "Waiter adds two dumplings to the bucket",
+    actor: "waiter",
+    expect: "Order Bucket lists the dish and the subtotal updates",
+    event: { type: "waiter/add-to-cart", tableId: DEFAULT_TABLE_ID, line: dish("d1", 2) },
+  },
+  {
+    id: "p2-5",
+    title: "Waiter adds a rice roll",
+    actor: "waiter",
+    event: { type: "waiter/add-to-cart", tableId: DEFAULT_TABLE_ID, line: dish("d2") },
+  },
+  {
+    id: "p2-6",
+    title: "Waiter confirms the order",
+    actor: "waiter",
+    expect: "Back on the table detail with the items listed; mobile sees the waiter-added order",
+    event: { type: "waiter/submit-order", tableId: DEFAULT_TABLE_ID },
+  },
+  {
+    id: "p2-7",
+    title: "Customer taps View and Pay Bill",
+    actor: "customer",
+    expect: "Phone checks the orders, then shows the bill with the Split the Bill card",
+    event: { type: "customer/request-bill" },
+  },
+];
+
+export const SCENARIOS: Record<PhaseId, Step[]> = {
+  "1.0": SCENARIO_1,
+  "2.0": SCENARIO_2,
+};
 
 export const resolveStepEvent = (step: Step, state: SimState): SimEvent | null =>
   typeof step.event === "function" ? step.event(state) : step.event;

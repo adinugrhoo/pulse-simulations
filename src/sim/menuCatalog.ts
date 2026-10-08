@@ -102,4 +102,4 @@ export const CATEGORIES = [
   { id: "dessert", label: "Dessert", thumb: "cat-5.jpg", category: "Dessert" },
 ] as const;
 
-export const dishImageUrl = (image: string) => `/figma/mobile-menu/${image}`;
+export const dishImageUrl = (image: string) => (image.startsWith("/") ? image : `/figma/mobile-menu/${image}`);

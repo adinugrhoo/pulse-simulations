@@ -7,6 +7,7 @@ import { CartScreen } from "./CartScreen";
 import { OrderPlacedScreen } from "./OrderPlacedScreen";
 import { BillScreen } from "./BillScreen";
 import { PaymentSuccessScreen } from "./PaymentSuccessScreen";
+import { BillLoadingScreen, PaymentPartialScreen, PaymentProcessingScreen } from "./SplitFlowScreens";
 
 const stub = (screenId: MobileScreenId, figmaNode?: string) => {
   const Stub = () => <ScreenStub device="mobile" screenId={screenId} figmaNode={figmaNode} />;
@@ -27,5 +28,8 @@ export const MOBILE_REGISTRY: Record<MobileScreenId, ComponentType> = {
   "order-placed": OrderPlacedScreen,
   "order-status": stub("order-status"),
   bill: BillScreen,
+  "bill-loading": BillLoadingScreen,
+  "payment-processing": PaymentProcessingScreen,
+  "payment-partial": PaymentPartialScreen,
   "payment-success": PaymentSuccessScreen,
 };

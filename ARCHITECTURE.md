@@ -86,6 +86,21 @@ via `className` rather than globally, since only these Figma-derived screens use
 registry screen, which is why `waiter/select-table`, `waiter/add-to-cart` and `waiter/submit-order` all keep the tablet
 on `tables` in `triggers.ts`; routing elsewhere would unmount the dialog mid-action. The bottom tab bar dispatches
 `sim/navigate` between the four tablet screen ids.
+**Phases.** The header phase dropdown is live: `state.phase` (`src/sim/phases.ts`) selects which script in `SCENARIOS`
+(`scenario.ts`) the stepper runs; Reset keeps the phase. Phase 2.0 covers the POS order flow.
+
+**Table management (Phase 2.0, Figma `2861:12353`).** `TablesRoute` (tablet registry) renders `TablesScreenV2` when
+`phase === "2.0"`. The floor is 25 sections (`src/sim/sections.ts`, 219 tables from `seedTablesV2()`; Main Dining keeps
+`t01`-`t15`). The top-left pill names the section in view (scroll-spy) and opens `SectionsSidebar`, a blurred left
+drawer with per-section vacant / allocate counts; picking a section eases the scroll there (`src/lib/smoothScroll.ts`,
+ease-in-out). Sidebar and scroll state are local UI, not sim state.
+
+**POS order (Phase 2.0, Figma `2820:17259`).** `pos-order` is a full-screen tablet registry screen
+(`PosOrderScreen.tsx`). "Add Order" in `OrderDetailDialog` dispatches `waiter/open-pos`; the order bucket is the live
+`waiter.cart`, and Confirm Order dispatches `waiter/submit-order`. The dialog's open state is `waiter.openTableId`
+(not local state), so closing the POS (`waiter/close-pos`) or confirming returns to `tables` with the dialog still open.
+Dish tiles/cards come from `MENU_CATALOG`, not the Figma's French menu copy.
+
 `LoginScreen`'s Continue / skip-login both dispatch `customer/login` with placeholder guest data — replace with
 the real trigger once specified. `MobileTabBar` (`src/devices/mobile/MobileTabBar.tsx`, Figma `2099:4590`) is the
 HOME / VIEW AND PAY BILL bar shared by `menu` and `bill`; the Figma source file's orange primary is remapped to

@@ -1,4 +1,4 @@
-import type { CartLine, OrderStatus } from "./types";
+import type { CartLine, OrderStatus, SplitPlan } from "./types";
 import type { MobileScreenId, TabletScreenId } from "./screens";
 
 /**
@@ -19,13 +19,25 @@ export type SimEvent =
   | { type: "customer/call-waiter"; reason?: string }
   | { type: "customer/request-bill" }
   | { type: "customer/pay-bill" }
+  | { type: "customer/start-split"; plan: SplitPlan }
+  | { type: "customer/clear-split" }
+  | { type: "customer/pay-share" }
   /* waiter (tablet) */
   | { type: "waiter/select-table"; tableId: string }
+  | { type: "waiter/close-order-detail" }
+  | { type: "waiter/open-pos"; tableId: string }
+  | { type: "waiter/close-pos" }
+  | { type: "waiter/increment-cart-line"; lineId: string }
+  | { type: "waiter/decrement-cart-line"; lineId: string }
+  | { type: "waiter/remove-cart-line"; lineId: string }
+  | { type: "waiter/replace-cart-line"; lineId: string; line: Omit<CartLine, "lineId"> }
   | { type: "waiter/open-order"; orderId: string }
   | { type: "waiter/add-to-cart"; tableId: string; line: Omit<CartLine, "lineId"> }
   | { type: "waiter/submit-order"; tableId: string }
   | { type: "waiter/set-order-status"; orderId: string; status: OrderStatus }
-  | { type: "waiter/settle-bill"; tableId: string; amount: number }
+  | { type: "waiter/settle-bill"; tableId: string; amount: number; method?: string; tendered?: number }
+  | { type: "waiter/close-table"; tableId: string }
+  | { type: "waiter/open-table"; tableId: string; guests: number; guestName: string; phone: string }
   /* simulation control */
   | { type: "sim/navigate"; mobile?: MobileScreenId; tablet?: TabletScreenId }
   | { type: "sim/reset" };

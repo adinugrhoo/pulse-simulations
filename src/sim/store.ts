@@ -3,7 +3,8 @@
 import { create } from "zustand";
 import type { SimEvent } from "./events";
 import { reduce } from "./reducer";
-import { SCENARIO, resolveStepEvent } from "./scenario";
+import type { PhaseId } from "./phases";
+import { SCENARIOS, resolveStepEvent } from "./scenario";
 import { actorOf, initialState, type SimState } from "./state";
 import { resolveNav } from "./triggers";
 import type { MobileScreenId, TabletScreenId } from "./screens";
@@ -14,6 +15,7 @@ type SimActions = {
   next: () => void;
   prev: () => void;
   reset: () => void;
+  setPhase: (phase: PhaseId) => void;
   setScreen: (mobile?: MobileScreenId, tablet?: TabletScreenId) => void;
   dismissSignal: (id: string) => void;
 };
@@ -25,7 +27,7 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
 
   dispatch: (event) => {
     if (event.type === "sim/reset") {
-      set({ ...initialState() });
+      set({ ...initialState(get().phase) });
       return;
     }
     const current = get();
@@ -43,7 +45,7 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
   },
 
   runStep: (index) => {
-    const step = SCENARIO[index];
+    const step = SCENARIOS[get().phase][index];
     if (!step) return;
     const event = resolveStepEvent(step, get());
     if (event) get().dispatch(event);
@@ -52,19 +54,21 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
 
   next: () => {
     const nextIndex = get().stepIndex + 1;
-    if (nextIndex >= SCENARIO.length) return;
+    if (nextIndex >= SCENARIOS[get().phase].length) return;
     get().runStep(nextIndex);
   },
 
   /** No undo log yet: rewind replays the script from scratch up to the target step. */
   prev: () => {
     const target = get().stepIndex - 1;
-    set({ ...initialState() });
+    set({ ...initialState(get().phase) });
     for (let i = 0; i <= target; i += 1) get().runStep(i);
     set({ stepIndex: target });
   },
 
-  reset: () => set({ ...initialState() }),
+  reset: () => set({ ...initialState(get().phase) }),
+
+  setPhase: (phase) => set({ ...initialState(phase) }),
 
   setScreen: (mobile, tablet) => get().dispatch({ type: "sim/navigate", mobile, tablet }),
 

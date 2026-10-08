@@ -1,5 +1,6 @@
 "use client";
 
+import { grandTotal as grandTotalOf } from "@/sim/bill";
 import Image from "next/image";
 import { useMemo } from "react";
 import { figtree } from "@/lib/fonts";
@@ -59,7 +60,7 @@ export function OrderPlacedScreen() {
   const itemTotal = openLines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
   const serviceCharge = itemTotal * 0.05;
   const tax = itemTotal * 0.09;
-  const grandTotal = itemTotal + serviceCharge + tax;
+  const grandTotal = grandTotalOf(itemTotal);
 
   const queueNumber = order ? String(1000 + (order.placedAtTick % 9000)) : "—";
 

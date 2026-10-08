@@ -1,5 +1,6 @@
 "use client";
 
+import { grandTotal as grandTotalOf } from "@/sim/bill";
 import Image from "next/image";
 import { useMemo } from "react";
 import { figtree } from "@/lib/fonts";
@@ -66,7 +67,7 @@ export function CartScreen() {
   const subtotal = cartTotal(cart);
   const serviceCharge = subtotal * 0.05;
   const tax = subtotal * 0.09;
-  const total = subtotal + serviceCharge + tax;
+  const total = grandTotalOf(subtotal);
 
   const back = () => dispatch({ type: "sim/navigate", mobile: "menu" });
   const addDish = (dish: CatalogDish) =>

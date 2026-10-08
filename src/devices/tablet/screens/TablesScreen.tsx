@@ -6,10 +6,10 @@ import { figtree } from "@/lib/fonts";
 import { cn } from "@/lib/cn";
 import { currency, type Table } from "@/sim/types";
 import { useSim } from "@/sim/store";
-import type { TabletScreenId } from "@/sim/screens";
+import { TabletTabBar } from "../TabletTabBar";
 import { OrderDetailDialog } from "./OrderDetailDialog";
 
-const formatSeated = (minutes = 0) => {
+export const formatSeated = (minutes = 0) => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -27,7 +27,7 @@ const matchesFilter = (table: Table, filter: Filter) => {
 };
 
 /** SGD-formatted total/balance row inside a table card — brown for owed, green for settled. */
-function BillRow({ label, amount, tone }: { label: string; amount: number; tone: "owed" | "paid" }) {
+export function BillRow({ label, amount, tone }: { label: string; amount: number; tone: "owed" | "paid" }) {
   return (
     <div
       className={cn(
@@ -41,7 +41,7 @@ function BillRow({ label, amount, tone }: { label: string; amount: number; tone:
   );
 }
 
-function TableCard({ table, onOpenOrderDetail }: { table: Table; onOpenOrderDetail: () => void }) {
+function TableCard({ table }: { table: Table }) {
   const dispatch = useSim((s) => s.dispatch);
   const isPaid = table.status === "billed";
   const isPartial = table.status === "partial";
@@ -58,12 +58,11 @@ function TableCard({ table, onOpenOrderDetail }: { table: Table; onOpenOrderDeta
     return () => clearTimeout(timer);
   }, [table.paidAtTick]);
 
-  /** Any seated table opens the order-detail dialog; `waiter/select-table` keeps the
-   *  tablet on `tables` (see triggers.ts) so the dialog renders over the floor plan. */
+  /** Any seated table opens the order-detail dialog; `waiter/select-table` sets
+   *  `waiter.openTableId` and keeps the tablet on `tables` (see triggers.ts). */
   const onClick = () => {
     if (!isActive) return;
     dispatch({ type: "waiter/select-table", tableId: table.id });
-    onOpenOrderDetail();
   };
 
   if (!isActive) {
@@ -132,19 +131,13 @@ function TableCard({ table, onOpenOrderDetail }: { table: Table; onOpenOrderDeta
   );
 }
 
-const TABS: { id: TabletScreenId; label: string; icon: string }[] = [
-  { id: "tables", label: "Table", icon: "nav-table" },
-  { id: "orders", label: "Order", icon: "nav-order" },
-  { id: "settings", label: "Settings", icon: "nav-settings" },
-];
-
 /** Figma: Pulse, node 1802:11665 ("Frame" — the table floor grid). */
 export function TablesScreen() {
   const tables = useSim((s) => s.tables);
-  const screen = useSim((s) => s.screens.tablet);
-  const setScreen = useSim((s) => s.setScreen);
   const [filter, setFilter] = useState<Filter>("All");
-  const [openTableId, setOpenTableId] = useState<string | null>(null);
+  const dispatch = useSim((s) => s.dispatch);
+  /** Store-driven so the dialog is still open when the waiter comes back from the POS page. */
+  const openTableId = useSim((s) => s.waiter.openTableId);
 
   const visible = useMemo(() => tables.filter((t) => matchesFilter(t, filter)), [tables, filter]);
 
@@ -182,39 +175,14 @@ export function TablesScreen() {
       {/* table grid */}
       <div className="absolute top-[102px] left-5 grid w-[1240px] grid-cols-5 gap-5">
         {visible.map((table) => (
-          <TableCard key={table.id} table={table} onOpenOrderDetail={() => setOpenTableId(table.id)} />
+          <TableCard key={table.id} table={table} />
         ))}
       </div>
 
-      {/* bottom tab bar */}
-      <div className="absolute bottom-0 left-1/2 flex w-[1280px] -translate-x-1/2 items-center justify-center bg-[#151515]">
-        {TABS.map((tab) => {
-          const active = tab.id === screen;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setScreen(undefined, tab.id)}
-              className="flex h-full w-[140px] flex-col items-center justify-center gap-3 pb-3"
-            >
-              <div className={cn("h-0.5 w-8 rounded-full", active && "w-16 bg-[#f5dfa8]")} />
-              <div className="flex flex-col items-center gap-1">
-                <Image src={`/figma/tablet-tables/${tab.icon}.svg`} alt="" width={24} height={24} />
-                <span
-                  className={cn(
-                    "text-sm leading-none",
-                    active ? "font-semibold text-[#f5dfa8]" : "text-[#8f8f8f]",
-                  )}
-                >
-                  {tab.label}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      <TabletTabBar />
 
       {openTableId ? (
-        <OrderDetailDialog tableId={openTableId} onClose={() => setOpenTableId(null)} />
+        <OrderDetailDialog tableId={openTableId} onClose={() => dispatch({ type: "waiter/close-order-detail" })} />
       ) : null}
     </div>
   );

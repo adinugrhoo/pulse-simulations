@@ -4,6 +4,7 @@ import { MobileDevice } from "@/devices/mobile/MobileDevice";
 import { TabletDevice } from "@/devices/tablet/TabletDevice";
 import { PhaseSelect } from "./PhaseSelect";
 import { ScenarioBar } from "./ScenarioBar";
+import { ThemeSelect } from "./ThemeSelect";
 
 /** Full site view: customer mobile on the left, waiter tablet on the right. */
 export function Stage() {
@@ -13,6 +14,7 @@ export function Stage() {
         <div className="flex items-center gap-3">
           <h1 className="text-sm font-semibold tracking-wide">Pulse Simulations</h1>
           <PhaseSelect />
+          <ThemeSelect />
         </div>
         <ScenarioBar />
       </header>

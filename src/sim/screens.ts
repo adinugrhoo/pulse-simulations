@@ -12,6 +12,9 @@ export const MOBILE_SCREENS = [
   "order-placed",
   "order-status",
   "bill",
+  "bill-loading",
+  "payment-processing",
+  "payment-partial",
   "payment-success",
 ] as const;
 
@@ -20,6 +23,7 @@ export const TABLET_SCREENS = [
   "table-detail",
   "orders",
   "order-detail",
+  "pos-order",
   "menu",
   "settings",
 ] as const;

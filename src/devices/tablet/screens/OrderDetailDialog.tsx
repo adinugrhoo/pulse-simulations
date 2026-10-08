@@ -11,22 +11,19 @@ import { MENU_CATALOG, dishImageUrl, type CatalogDish } from "@/sim/menuCatalog"
 const ASSET = "/figma/tablet-order-detail";
 
 /**
- * Gradients from the Figma node. The export hands the *first* stop a position that
- * sits after the second one; CSS would clamp the rest up to it and paint a solid gold
- * wedge over half the card. Figma renders that first stop at the origin, so it is
- * pinned to 0% here and every later stop is kept verbatim — a tight gold corner
- * falling away to near-black, which is what the frame actually shows.
+ * Gold gradients. The Figma export pins a solid gold corner that falls to near-black in a
+ * few hard steps, which leaves visible banding lines inside the cards. Here the gold is
+ * a low-opacity wash (peak 0.2) that eases to fully transparent over many stops, so it
+ * blends into whatever card sits behind it with no residual edge.
  */
-const GRAD_PULSE_SUMMARY =
-  "linear-gradient(108.70679079093213deg, rgb(224, 192, 120) 0%, rgb(92, 82, 57) 4.2572%, rgb(38, 36, 31) 19.074%, rgb(25, 25, 25) 82.58%)";
-const GRAD_GUEST_SUMMARY =
-  "linear-gradient(119.91386405320843deg, rgb(224, 192, 120) 0%, rgb(92, 82, 57) 4.2572%, rgb(38, 36, 31) 19.074%, rgb(25, 25, 25) 82.58%)";
-const GRAD_GOLD_ROW =
-  "linear-gradient(90deg, rgb(224, 192, 120) 0%, rgb(92, 82, 57) 11.86%, rgb(38, 36, 31) 29.617%, rgb(25, 25, 25) 100%)";
+const goldFade = (angle: string) =>
+  `linear-gradient(${angle}, rgba(224, 192, 120, 0.2) 0%, rgba(224, 192, 120, 0.15) 8%, rgba(224, 192, 120, 0.1) 20%, rgba(224, 192, 120, 0.05) 38%, rgba(224, 192, 120, 0.02) 60%, rgba(224, 192, 120, 0) 100%)`;
+const GRAD_PULSE_SUMMARY = goldFade("108.7deg");
+const GRAD_GUEST_SUMMARY = goldFade("119.9deg");
+const GRAD_GOLD_ROW = goldFade("90deg");
 const GRAD_PURPLE_ROW =
   "linear-gradient(90deg, rgb(95, 44, 191) 0%, rgb(95, 44, 191) 11.86%, rgb(59, 22, 128) 29.617%, rgb(25, 25, 25) 100%)";
-const GRAD_BALANCE =
-  "linear-gradient(-72.45536113588904deg, rgb(224, 192, 120) 0%, rgb(92, 82, 57) 8.9481%, rgb(38, 36, 31) 12.71%, rgb(25, 25, 25) 78.205%)";
+const GRAD_BALANCE = goldFade("-72.5deg");
 
 /**
  * Guest CRM copy, verbatim from Figma node 2098:2517. The sim has no guest-history
@@ -223,7 +220,7 @@ export function OrderDetailDialog({ tableId, onClose }: { tableId: string; onClo
       tableId,
       line: { itemId: dish.id, name: dish.name, unitPrice: dish.price, qty: 1 },
     });
-  const addOrder = () => dispatch({ type: "waiter/submit-order", tableId });
+  const openPos = () => dispatch({ type: "waiter/open-pos", tableId });
   const closeTable = () => dispatch({ type: "waiter/settle-bill", tableId, amount: balance });
 
   return (
@@ -305,8 +302,8 @@ export function OrderDetailDialog({ tableId, onClose }: { tableId: string; onClo
 
               <div className="flex w-full flex-col items-start gap-3">
                 <div className="flex w-full items-center">
-                  <div className="relative size-[46px] shrink-0 overflow-hidden rounded-full border-2 border-[#74581d]">
-                    <div className="absolute top-1 left-1 flex size-[38px] items-center justify-center overflow-hidden rounded-full bg-[#fff8eb] shadow-[3.304px_0px_8.261px_6.609px_rgba(58,58,58,0.15)]">
+                  <div className="relative flex size-[46px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#74581d]">
+                    <div className="flex size-[38px] items-center justify-center overflow-hidden rounded-full bg-[#fff8eb] shadow-[3.304px_0px_8.261px_6.609px_rgba(58,58,58,0.15)]">
                       <span className="text-base leading-none font-bold text-[#74581d]">{initial}</span>
                     </div>
                   </div>
@@ -458,9 +455,8 @@ export function OrderDetailDialog({ tableId, onClose }: { tableId: string; onClo
                 </span>
               </button>
               <button
-                onClick={addOrder}
-                disabled={pendingCount === 0}
-                className="flex items-center justify-center gap-1 rounded-xl border border-[#2f2d2b] bg-[#101213] px-4 py-3.5 disabled:opacity-50"
+                onClick={openPos}
+                className="flex items-center justify-center gap-1 rounded-xl border border-[#2f2d2b] bg-[#101213] px-4 py-3.5 transition hover:brightness-125"
               >
                 <Image src={`${ASSET}/plus.svg`} alt="" width={14} height={14} className="size-[14px]" />
                 <span className="text-sm leading-none font-semibold whitespace-nowrap text-[#fff8eb]">
