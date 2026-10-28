@@ -1,0 +1,276 @@
+{
+  "added": [
+    {
+      "id": "p-hot-latte",
+      "name": "Hot Latte",
+      "price": 5.5,
+      "description": "Double shot espresso with steamed milk."
+    },
+    {
+      "id": "p-ginger-tea",
+      "name": "Ginger Honey Tea",
+      "price": 4.5
+    },
+    {
+      "id": "p-hot-milo",
+      "name": "Hot Milo",
+      "price": 4
+    },
+    {
+      "id": "p-iced-latte",
+      "name": "Iced Latte",
+      "price": 6,
+      "description": "Double shot espresso over cold milk and ice."
+    },
+    {
+      "id": "p-iced-milo",
+      "name": "Iced Milo",
+      "price": 4.5
+    },
+    {
+      "id": "p-lychee-tea",
+      "name": "Iced Lychee Tea",
+      "price": 5.5
+    },
+    {
+      "id": "p-barley",
+      "name": "Iced Barley Water",
+      "price": 3.8
+    },
+    {
+      "id": "p-calamansi",
+      "name": "Calamansi Juice",
+      "price": 4.8
+    },
+    {
+      "id": "p-grass-jelly",
+      "name": "Chilled Grass Jelly with Honey",
+      "price": 6.8
+    },
+    {
+      "id": "p-almond-tofu",
+      "name": "Almond Tofu with Lychee",
+      "price": 7.2
+    }
+  ],
+  "categories": {
+    "tablet": [
+      {
+        "id": "appetizers",
+        "name": "Appetizers",
+        "color": "#6334af",
+        "dishIds": [
+          "d8",
+          "p-cucumber",
+          "p-jellyfish",
+          "p-edamame",
+          "p-squid",
+          "p-spring-roll",
+          "p-wonton-fried",
+          "p-century-egg",
+          "p-drunken-chicken",
+          "p-pork-ribs",
+          "p-tofu-cold",
+          "p-prawn-toast",
+          "p-lotus-chips",
+          "p-peanuts",
+          "p-pork-jelly"
+        ]
+      },
+      {
+        "id": "classic-wok-dishes",
+        "name": "Classic Wok Dishes",
+        "color": "#285ca8",
+        "dishIds": [
+          "p-mushroom-chicken",
+          "p-kungpao",
+          "p-sweet-sour",
+          "p-beef-pepper",
+          "p-kangkong"
+        ]
+      },
+      {
+        "id": "rice-and-noodles",
+        "name": "Rice & Noodles",
+        "color": "#226b50",
+        "dishIds": [
+          "p-yangzhou",
+          "p-hor-fun",
+          "p-saltfish-rice",
+          "p-hokkien",
+          "p-singapore-noodle"
+        ]
+      },
+      {
+        "id": "desserts",
+        "name": "Desserts",
+        "color": "#98501e",
+        "dishIds": [
+          "d4",
+          "p-peach-gum",
+          "p-egg-tart",
+          "p-sesame-ball",
+          "p-mango-sago",
+          "p-grass-jelly",
+          "p-almond-tofu"
+        ],
+        "subcategories": [
+          {
+            "id": "warm",
+            "name": "Warm",
+            "color": "#b5532a",
+            "dishIds": [
+              "d4",
+              "p-peach-gum",
+              "p-egg-tart",
+              "p-sesame-ball"
+            ]
+          },
+          {
+            "id": "chilled",
+            "name": "Chilled",
+            "color": "#3c6f8c",
+            "dishIds": [
+              "p-mango-sago",
+              "p-grass-jelly",
+              "p-almond-tofu"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "beverages",
+        "name": "Drinks",
+        "color": "#a33d40",
+        "dishIds": [
+          "p-hot-tea",
+          "p-chrysanthemum",
+          "p-hot-latte",
+          "p-ginger-tea",
+          "p-hot-milo",
+          "p-lemon-tea",
+          "p-iced-latte",
+          "p-iced-milo",
+          "p-lychee-tea",
+          "p-barley",
+          "p-calamansi",
+          "p-soy-milk",
+          "p-coke"
+        ],
+        "subcategories": [
+          {
+            "id": "hot",
+            "name": "Hot",
+            "color": "#ff5939",
+            "dishIds": [
+              "p-hot-tea",
+              "p-chrysanthemum",
+              "p-hot-latte",
+              "p-ginger-tea",
+              "p-hot-milo"
+            ]
+          },
+          {
+            "id": "ice",
+            "name": "Ice",
+            "color": "#75532e",
+            "dishIds": [
+              "p-lemon-tea",
+              "p-iced-latte",
+              "p-iced-milo",
+              "p-lychee-tea",
+              "p-barley",
+              "p-calamansi",
+              "p-soy-milk",
+              "p-coke"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "set-menu",
+        "name": "Set Menu",
+        "color": "#7050aa",
+        "dishIds": [
+          "p-set-dimsum2",
+          "p-set-family",
+          "p-set-lunch-a",
+          "p-set-lunch-b",
+          "p-set-veg"
+        ]
+      },
+      {
+        "id": "top-8-best-dishes",
+        "name": "Top 8 Best Dishes",
+        "color": "#227488",
+        "dishIds": [
+          "d1",
+          "d2",
+          "d3",
+          "d4",
+          "d5"
+        ]
+      },
+      {
+        "id": "steamed-dim-sum",
+        "name": "Steamed Dim Sum",
+        "color": "#3b7138",
+        "dishIds": [
+          "d5",
+          "d3",
+          "d1",
+          "p-chicken-feet",
+          "p-beef-ball"
+        ]
+      },
+      {
+        "id": "fried-and-baked-dim-sum",
+        "name": "Fried & Baked Dim Sum",
+        "color": "#87611e",
+        "dishIds": [
+          "d7",
+          "d8",
+          "p-bbq-bun",
+          "p-taro",
+          "p-potsticker"
+        ]
+      },
+      {
+        "id": "rice-rolls",
+        "name": "Rice Rolls",
+        "color": "#a13771",
+        "dishIds": [
+          "d2",
+          "p-roll-prawn",
+          "p-roll-char-siu",
+          "p-roll-beef",
+          "p-roll-plain"
+        ]
+      },
+      {
+        "id": "congee",
+        "name": "Congee",
+        "color": "#4b4da8",
+        "dishIds": [
+          "d6",
+          "p-congee-fish",
+          "p-congee-chicken",
+          "p-congee-abalone",
+          "p-congee-plain"
+        ]
+      },
+      {
+        "id": "noodles",
+        "name": "Noodles",
+        "color": "#216f69",
+        "dishIds": [
+          "p-wonton-noodle",
+          "p-dandan",
+          "p-brisket-noodle",
+          "p-efu",
+          "p-sesame-noodle"
+        ]
+      }
+    ]
+  }
+}

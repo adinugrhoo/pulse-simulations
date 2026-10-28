@@ -1,0 +1,575 @@
+{
+  "dishes": [
+    {
+      "id": "d1",
+      "name": "Steamed Mushroom and Truffle Dumpling",
+      "price": 12.4,
+      "image": "/figma/mobile-menu/dish-1.png",
+      "description": "Shiitake, king oyster and black truffle paste folded into a translucent wheat-starch skin.",
+      "kcal": 110
+    },
+    {
+      "id": "d2",
+      "name": "Crispy Rice Roll with BBQ Pork Filling",
+      "price": 16.4,
+      "image": "/figma/mobile-menu/dish-2.png",
+      "description": "Char siu wrapped in silky rice noodle and deep-fried for a shattering crust.",
+      "kcal": 240,
+      "tags": [
+        "Spicy",
+        "Contains Pork",
+        "Chef's Pick",
+        "Gluten"
+      ]
+    },
+    {
+      "id": "d3",
+      "name": "Har Gow Crystal Shrimp Dumpling",
+      "price": 12.8,
+      "image": "/figma/mobile-menu/dish-3.png",
+      "description": "Whole tiger prawns and bamboo shoot in a hand-pleated crystal skin.",
+      "kcal": 90
+    },
+    {
+      "id": "d4",
+      "name": "Golden Salted Egg Yolk Bun",
+      "price": 11.4,
+      "image": "/figma/mobile-menu/dish-4.png",
+      "description": "Steamed milk bun with a molten salted duck-egg custard centre.",
+      "kcal": 180
+    },
+    {
+      "id": "d5",
+      "name": "Siew Mai Pork and Shrimp Dumpling",
+      "price": 10.8,
+      "image": "/figma/mobile-menu/dish-5.png",
+      "description": "Minced pork and shrimp topped with tobiko, steamed in an open wrapper.",
+      "kcal": 120
+    },
+    {
+      "id": "d6",
+      "name": "Century Egg Congee with Century Egg",
+      "price": 9.4,
+      "image": "/figma/mobile-menu/dish-1.png",
+      "description": "Slow-simmered rice porridge with century egg and shredded young ginger.",
+      "kcal": 150
+    },
+    {
+      "id": "d7",
+      "name": "Pan-Fried Radish Cake",
+      "price": 8.9,
+      "image": "/figma/mobile-menu/dish-2.png",
+      "description": "Shredded daikon and cured sausage cake, seared until golden at the edges.",
+      "kcal": 200,
+      "tags": [
+        "Spicy",
+        "Contains Pork"
+      ]
+    },
+    {
+      "id": "d8",
+      "name": "Deep Fried Beancurd Skin Roll",
+      "price": 9.9,
+      "image": "/figma/mobile-menu/dish-3.png",
+      "description": "Beancurd skin rolled around pork and water chestnut, fried crisp.",
+      "kcal": 210
+    },
+    {
+      "id": "p-cucumber",
+      "name": "Smacked Cucumber Salad",
+      "price": 6.8
+    },
+    {
+      "id": "p-jellyfish",
+      "name": "Chilled Jellyfish with Sesame",
+      "price": 12.8
+    },
+    {
+      "id": "p-edamame",
+      "name": "Edamame with Sea Salt",
+      "price": 5.8
+    },
+    {
+      "id": "p-squid",
+      "name": "Salt and Pepper Squid",
+      "price": 14.8
+    },
+    {
+      "id": "p-spring-roll",
+      "name": "Crispy Vegetable Spring Rolls",
+      "price": 7.8
+    },
+    {
+      "id": "p-wonton-fried",
+      "name": "Crispy Fried Wontons",
+      "price": 8.8
+    },
+    {
+      "id": "p-century-egg",
+      "name": "Century Egg with Pickled Ginger",
+      "price": 7.4
+    },
+    {
+      "id": "p-drunken-chicken",
+      "name": "Drunken Chicken",
+      "price": 11.8
+    },
+    {
+      "id": "p-pork-ribs",
+      "name": "Sweet and Sour Pork Ribs",
+      "price": 15.8
+    },
+    {
+      "id": "p-tofu-cold",
+      "name": "Cold Silken Tofu with Spring Onion",
+      "price": 6.8
+    },
+    {
+      "id": "p-prawn-toast",
+      "name": "Golden Prawn Toast",
+      "price": 12.8
+    },
+    {
+      "id": "p-lotus-chips",
+      "name": "Crispy Lotus Root Chips",
+      "price": 6.4
+    },
+    {
+      "id": "p-peanuts",
+      "name": "Chilli Oil Peanuts",
+      "price": 4.8
+    },
+    {
+      "id": "p-pork-jelly",
+      "name": "Marinated Pork Knuckle",
+      "price": 13.8
+    },
+    {
+      "id": "p-mushroom-chicken",
+      "name": "Wok-fried Chicken with Mushrooms and Asparagus",
+      "price": 22.8,
+      "image": "/figma/mobile-menu/dish-4.png"
+    },
+    {
+      "id": "p-kungpao",
+      "name": "Kung Pao Chicken",
+      "price": 18.8,
+      "image": "/figma/mobile-menu/dish-4.png"
+    },
+    {
+      "id": "p-sweet-sour",
+      "name": "Sweet and Sour Pork",
+      "price": 19.8,
+      "image": "/figma/mobile-menu/dish-4.png"
+    },
+    {
+      "id": "p-beef-pepper",
+      "name": "Black Pepper Beef",
+      "price": 24.8,
+      "image": "/figma/mobile-menu/dish-4.png"
+    },
+    {
+      "id": "p-kangkong",
+      "name": "Sambal Kangkong",
+      "price": 14.8
+    },
+    {
+      "id": "p-yangzhou",
+      "name": "Yangzhou Fried Rice",
+      "price": 16.8
+    },
+    {
+      "id": "p-hor-fun",
+      "name": "Beef Hor Fun",
+      "price": 17.8
+    },
+    {
+      "id": "p-saltfish-rice",
+      "name": "Salted Fish Chicken Fried Rice",
+      "price": 16.8
+    },
+    {
+      "id": "p-hokkien",
+      "name": "Hokkien Fried Noodles",
+      "price": 16.8
+    },
+    {
+      "id": "p-singapore-noodle",
+      "name": "Singapore Fried Vermicelli",
+      "price": 15.8
+    },
+    {
+      "id": "p-mango-sago",
+      "name": "Mango Pomelo Sago",
+      "price": 7.8
+    },
+    {
+      "id": "p-peach-gum",
+      "name": "Double-boiled Peach Gum",
+      "price": 8.8,
+      "image": "/figma/mobile-menu/dish-3.png"
+    },
+    {
+      "id": "p-egg-tart",
+      "name": "Baked Egg Tart",
+      "price": 6.8
+    },
+    {
+      "id": "p-sesame-ball",
+      "name": "Black Sesame Glutinous Rice Balls",
+      "price": 7.8
+    },
+    {
+      "id": "p-hot-tea",
+      "name": "Hot Chinese Tea",
+      "price": 3.5
+    },
+    {
+      "id": "p-lemon-tea",
+      "name": "Iced Lemon Tea",
+      "price": 4.5
+    },
+    {
+      "id": "p-soy-milk",
+      "name": "Fresh Soy Milk",
+      "price": 4,
+      "image": "/figma/tablet-pos/milk-glass.jpg"
+    },
+    {
+      "id": "p-chrysanthemum",
+      "name": "Chrysanthemum Tea",
+      "price": 4
+    },
+    {
+      "id": "p-coke",
+      "name": "Coca-Cola",
+      "price": 3.5
+    },
+    {
+      "id": "p-set-dimsum2",
+      "name": "Dim Sum Set for Two",
+      "price": 38.8,
+      "image": "/figma/mobile-menu/dish-1.png"
+    },
+    {
+      "id": "p-set-family",
+      "name": "Family Feast Set (4 pax)",
+      "price": 128
+    },
+    {
+      "id": "p-set-lunch-a",
+      "name": "Lunch Set A",
+      "price": 22.8
+    },
+    {
+      "id": "p-set-lunch-b",
+      "name": "Lunch Set B",
+      "price": 24.8
+    },
+    {
+      "id": "p-set-veg",
+      "name": "Vegetarian Set",
+      "price": 32.8
+    },
+    {
+      "id": "p-chicken-feet",
+      "name": "Chicken Feet in Black Bean Sauce",
+      "price": 8.8
+    },
+    {
+      "id": "p-beef-ball",
+      "name": "Steamed Beef Meatball",
+      "price": 8.4
+    },
+    {
+      "id": "p-bbq-bun",
+      "name": "Baked BBQ Pork Bun",
+      "price": 9.2
+    },
+    {
+      "id": "p-taro",
+      "name": "Fried Taro Dumpling",
+      "price": 9.4
+    },
+    {
+      "id": "p-potsticker",
+      "name": "Pan-fried Pork Dumplings",
+      "price": 9.8
+    },
+    {
+      "id": "p-roll-prawn",
+      "name": "Prawn Rice Roll",
+      "price": 12.8,
+      "image": "/figma/mobile-menu/dish-2.png"
+    },
+    {
+      "id": "p-roll-char-siu",
+      "name": "BBQ Pork Rice Roll",
+      "price": 11.8,
+      "image": "/figma/mobile-menu/dish-2.png"
+    },
+    {
+      "id": "p-roll-beef",
+      "name": "Beef Rice Roll with Coriander",
+      "price": 12.4,
+      "image": "/figma/mobile-menu/dish-2.png"
+    },
+    {
+      "id": "p-roll-plain",
+      "name": "Plain Rice Roll with Sweet Sauce",
+      "price": 7.8,
+      "image": "/figma/mobile-menu/dish-2.png"
+    },
+    {
+      "id": "p-congee-fish",
+      "name": "Fish Slice Congee",
+      "price": 10.8
+    },
+    {
+      "id": "p-congee-chicken",
+      "name": "Chicken and Ginger Congee",
+      "price": 9.8
+    },
+    {
+      "id": "p-congee-abalone",
+      "name": "Abalone Congee",
+      "price": 22.8
+    },
+    {
+      "id": "p-congee-plain",
+      "name": "Plain Congee with Youtiao",
+      "price": 6.8
+    },
+    {
+      "id": "p-wonton-noodle",
+      "name": "Wonton Noodle Soup",
+      "price": 11.8
+    },
+    {
+      "id": "p-dandan",
+      "name": "Dan Dan Noodles",
+      "price": 12.8
+    },
+    {
+      "id": "p-brisket-noodle",
+      "name": "Beef Brisket Noodles",
+      "price": 14.8
+    },
+    {
+      "id": "p-efu",
+      "name": "E-fu Noodles with Mushrooms",
+      "price": 16.8
+    },
+    {
+      "id": "p-sesame-noodle",
+      "name": "Cold Sesame Noodles",
+      "price": 10.8
+    }
+  ],
+  "categories": {
+    "mobile": [
+      {
+        "id": "popular",
+        "name": "Popular Recommendations",
+        "label": "Popular Recomm...",
+        "image": "/figma/mobile-menu/cat-1.png",
+        "dishIds": [
+          "d1",
+          "d2",
+          "d3",
+          "d4"
+        ]
+      },
+      {
+        "id": "dimsum",
+        "name": "Steamed Dim Sum",
+        "label": "Steamed Dim Sum",
+        "image": "/figma/mobile-menu/cat-2.png",
+        "dishIds": [
+          "d5",
+          "d6"
+        ]
+      },
+      {
+        "id": "fried",
+        "name": "Fried and Baked Dumplings",
+        "label": "Fried and Baked D...",
+        "image": "/figma/mobile-menu/cat-3.png",
+        "dishIds": [
+          "d7",
+          "d8"
+        ]
+      },
+      {
+        "id": "rice",
+        "name": "Rice Roll",
+        "label": "Rice Roll",
+        "image": "/figma/mobile-menu/cat-4.png",
+        "dishIds": []
+      },
+      {
+        "id": "dessert",
+        "name": "Dessert",
+        "label": "Dessert",
+        "image": "/figma/mobile-menu/cat-5.jpg",
+        "dishIds": []
+      }
+    ],
+    "tablet": [
+      {
+        "id": "appetizers",
+        "name": "Appetizers",
+        "color": "#6334af",
+        "dishIds": [
+          "d8",
+          "p-cucumber",
+          "p-jellyfish",
+          "p-edamame",
+          "p-squid",
+          "p-spring-roll",
+          "p-wonton-fried",
+          "p-century-egg",
+          "p-drunken-chicken",
+          "p-pork-ribs",
+          "p-tofu-cold",
+          "p-prawn-toast",
+          "p-lotus-chips",
+          "p-peanuts",
+          "p-pork-jelly"
+        ]
+      },
+      {
+        "id": "classic-wok-dishes",
+        "name": "Classic Wok Dishes",
+        "color": "#285ca8",
+        "dishIds": [
+          "p-mushroom-chicken",
+          "p-kungpao",
+          "p-sweet-sour",
+          "p-beef-pepper",
+          "p-kangkong"
+        ]
+      },
+      {
+        "id": "rice-and-noodles",
+        "name": "Rice & Noodles",
+        "color": "#226b50",
+        "dishIds": [
+          "p-yangzhou",
+          "p-hor-fun",
+          "p-saltfish-rice",
+          "p-hokkien",
+          "p-singapore-noodle"
+        ]
+      },
+      {
+        "id": "desserts",
+        "name": "Desserts",
+        "color": "#98501e",
+        "dishIds": [
+          "d4",
+          "p-mango-sago",
+          "p-peach-gum",
+          "p-egg-tart",
+          "p-sesame-ball"
+        ]
+      },
+      {
+        "id": "beverages",
+        "name": "Beverages",
+        "color": "#a33d40",
+        "dishIds": [
+          "p-hot-tea",
+          "p-lemon-tea",
+          "p-soy-milk",
+          "p-chrysanthemum",
+          "p-coke"
+        ]
+      },
+      {
+        "id": "set-menu",
+        "name": "Set Menu",
+        "color": "#7050aa",
+        "dishIds": [
+          "p-set-dimsum2",
+          "p-set-family",
+          "p-set-lunch-a",
+          "p-set-lunch-b",
+          "p-set-veg"
+        ]
+      },
+      {
+        "id": "top-8-best-dishes",
+        "name": "Top 8 Best Dishes",
+        "color": "#227488",
+        "dishIds": [
+          "d1",
+          "d2",
+          "d3",
+          "d4",
+          "d5"
+        ]
+      },
+      {
+        "id": "steamed-dim-sum",
+        "name": "Steamed Dim Sum",
+        "color": "#3b7138",
+        "dishIds": [
+          "d5",
+          "d3",
+          "d1",
+          "p-chicken-feet",
+          "p-beef-ball"
+        ]
+      },
+      {
+        "id": "fried-and-baked-dim-sum",
+        "name": "Fried & Baked Dim Sum",
+        "color": "#87611e",
+        "dishIds": [
+          "d7",
+          "d8",
+          "p-bbq-bun",
+          "p-taro",
+          "p-potsticker"
+        ]
+      },
+      {
+        "id": "rice-rolls",
+        "name": "Rice Rolls",
+        "color": "#a13771",
+        "dishIds": [
+          "d2",
+          "p-roll-prawn",
+          "p-roll-char-siu",
+          "p-roll-beef",
+          "p-roll-plain"
+        ]
+      },
+      {
+        "id": "congee",
+        "name": "Congee",
+        "color": "#4b4da8",
+        "dishIds": [
+          "d6",
+          "p-congee-fish",
+          "p-congee-chicken",
+          "p-congee-abalone",
+          "p-congee-plain"
+        ]
+      },
+      {
+        "id": "noodles",
+        "name": "Noodles",
+        "color": "#216f69",
+        "dishIds": [
+          "p-wonton-noodle",
+          "p-dandan",
+          "p-brisket-noodle",
+          "p-efu",
+          "p-sesame-noodle"
+        ]
+      }
+    ]
+  }
+}

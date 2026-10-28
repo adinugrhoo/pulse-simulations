@@ -1,4 +1,4 @@
-import { Stage } from "@/components/stage/Stage";
+import { Stage } from "@/stage/Stage";
 
 export default function Home() {
   return <Stage />;
