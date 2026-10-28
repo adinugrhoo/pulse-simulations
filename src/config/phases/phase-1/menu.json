@@ -1,0 +1,50 @@
+{
+  "added": [
+    {
+      "id": "m1",
+      "name": "Truffle Fries",
+      "price": 9.5,
+      "description": "Parmesan, truffle oil, chives"
+    },
+    {
+      "id": "m2",
+      "name": "Crispy Calamari",
+      "price": 14,
+      "description": "Lemon aioli"
+    },
+    {
+      "id": "m3",
+      "name": "Berczy Burger",
+      "price": 22,
+      "description": "Double patty, aged cheddar"
+    },
+    {
+      "id": "m4",
+      "name": "Grilled Salmon",
+      "price": 28.5,
+      "description": "Charred lemon, asparagus"
+    },
+    {
+      "id": "m5",
+      "name": "Margherita Pizza",
+      "price": 19,
+      "description": "San Marzano, basil"
+    },
+    {
+      "id": "m6",
+      "name": "Sticky Date Pudding",
+      "price": 11,
+      "description": "Butterscotch, vanilla ice cream"
+    },
+    {
+      "id": "m7",
+      "name": "Iced Latte",
+      "price": 6.5
+    },
+    {
+      "id": "m8",
+      "name": "Craft Lager",
+      "price": 12
+    }
+  ]
+}
