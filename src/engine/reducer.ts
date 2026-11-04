@@ -27,6 +27,18 @@ const recalcTableBill = (draft: SimState, tableId: string) => {
   table.totalBill = open.length ? grandTotal(open.reduce((s, o) => s + o.total, 0)) : undefined;
 };
 
+/**
+ * Dynamic QR: the customer is meant to fill in their own guest info, which the sim does not
+ * model. Once a table has an order but no guest, stand in a placeholder so the guest list has one.
+ */
+const seedPlaceholderGuest = (draft: SimState, tableId: string) => {
+  if (draft.qrType !== "dynamic") return;
+  const table = tableOf(draft, tableId);
+  if (!table || table.guestName) return;
+  table.guestName = "Alex";
+  table.phone = "+65 8123 4567";
+};
+
 const signal = (draft: SimState, s: Omit<Signal, "id" | "tick">) => {
   draft.signals.unshift({ ...s, id: `sig-${draft.tick}`, tick: draft.tick });
   draft.signals = draft.signals.slice(0, 12);
@@ -341,6 +353,7 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         draft.waiter.cart = [];
         draft.waiter.pos = undefined;
         recalcTableBill(draft, event.tableId);
+        seedPlaceholderGuest(draft, event.tableId);
         if (event.tableId === draft.customer.tableId) {
           signal(draft, {
             device: "mobile",
@@ -395,8 +408,9 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         if (!table || (table.status !== "vacant" && table.status !== "allocated")) break;
         table.status = "occupied";
         table.guests = event.guests;
-        table.guestName = event.guestName;
-        table.phone = event.phone;
+        // dynamic QR sends them blank: the customer fills in their own on login
+        table.guestName = event.guestName || undefined;
+        table.phone = event.phone || undefined;
         table.seatedMinutes = 0;
         delete table.lastSession;
         // straight into the order detail, which starts with no orders

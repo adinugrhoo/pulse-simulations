@@ -19,6 +19,15 @@ import type { MobileTokens, TabletTokens } from "@/theme/tokens";
 export type PhaseId = string;
 export type ThemeId = string;
 
+/** How the customer reaches the table: a printed code on the table, or a code the waiter generates per seating. */
+export type QrType = "static" | "dynamic";
+
+/** Scripted steps per QR type. A missing `dynamic` falls back to `static` until its flow is written. */
+/** Where the customer pays: on the waiter's tablet, or on an Adyen payment terminal that replaces the customer phone. */
+export type PaymentMode = "same-device" | "terminal";
+
+export type PhaseScenarios = { static: Step[]; dynamic?: Step[] };
+
 /** Behaviour switches a phase turns on; screens and triggers read these, never the phase id. */
 export type PhaseFeatures = {
   /** "plan" = the 15-table Pulse floor, "sections" = the 25-section floor with the sidebar. */
@@ -50,8 +59,8 @@ export type PhaseConfig = {
   features: PhaseFeatures;
   /** Fresh floor for a reset. */
   seedTables: () => Table[];
-  /** The scripted steps the header stepper runs. */
-  scenario: Step[];
+  /** The scripted steps the header stepper runs, per QR type (see `scenarioFor`). */
+  scenarios: PhaseScenarios;
   /** Menu changes for the whole phase (config/phases/<phase>/menu.json). */
   menu: MenuPatch;
   themes: ThemeConfig[];

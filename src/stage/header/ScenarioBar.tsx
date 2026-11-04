@@ -1,6 +1,6 @@
 "use client";
 
-import { getPhase } from "@/config/phases";
+import { scenarioFor } from "@/config/phases";
 import { useSim } from "@/engine/store";
 import { cn } from "@/lib/cn";
 import { Popover } from "./Popover";
@@ -14,12 +14,12 @@ const ACTOR_TONE = {
 const countChip = (count?: string) =>
   count ? <span className="tabular-nums text-neutral-500">{count}</span> : null;
 
-/** Header controls: step runner, scenario dropdown, event log dropdown. */
+/** Header controls: step runner and scenario dropdown. */
 export function ScenarioBar() {
   const phase = useSim((s) => s.phase);
-  const SCENARIO = getPhase(phase).scenario;
+  const qrType = useSim((s) => s.qrType);
+  const SCENARIO = scenarioFor(phase, qrType);
   const stepIndex = useSim((s) => s.stepIndex);
-  const log = useSim((s) => s.log);
   const runStep = useSim((s) => s.runStep);
   const next = useSim((s) => s.next);
   const prev = useSim((s) => s.prev);
@@ -75,31 +75,6 @@ export function ScenarioBar() {
             ))}
           </ol>
         )}
-      </Popover>
-
-      <Popover label="Log" chip={countChip(log.length ? String(log.length) : undefined)} align="right" width={300}>
-        {() =>
-          log.length === 0 ? (
-            <p className="p-2 text-[11px] text-neutral-600">No events yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-1 p-1 font-mono text-[10px] text-neutral-400">
-              {log.map((entry, i) => (
-                <li key={`${entry.tick}-${i}`} className="flex gap-2">
-                  <span className="w-6 shrink-0 text-right text-neutral-600">{entry.tick}</span>
-                  <span
-                    className={cn(
-                      "shrink-0",
-                      entry.actor === "customer" ? "text-sky-400" : "text-violet-400",
-                    )}
-                  >
-                    {entry.actor[0].toUpperCase()}
-                  </span>
-                  <span className="truncate">{entry.event.type}</span>
-                </li>
-              ))}
-            </ul>
-          )
-        }
       </Popover>
 
       <div className="ml-1 flex items-center gap-1">

@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { getTheme, type PhaseId, type ThemeId } from "@/config/phases";
+import { getTheme, type PaymentMode, type PhaseId, type QrType, type ThemeId } from "@/config/phases";
 
 /**
- * What the header has selected: the phase on screen and the theme each phase shows.
+ * What the header has selected: the phase on screen, the QR type, the payment mode and the theme each phase shows.
  * Lives outside the sim store so a reset or a scenario replay keeps the look, and in
  * sessionStorage so a dev reload (e.g. after the Menu Studio saves a menu.json) lands
  * back on the same phase and theme.
@@ -11,8 +11,12 @@ import { getTheme, type PhaseId, type ThemeId } from "@/config/phases";
 type ThemeChoice = {
   byPhase: Record<PhaseId, ThemeId>;
   lastPhase?: PhaseId;
+  lastQrType?: QrType;
+  lastPaymentMode?: PaymentMode;
   setTheme: (phaseId: PhaseId, themeId: ThemeId) => void;
   rememberPhase: (phaseId: PhaseId) => void;
+  rememberQrType: (qrType: QrType) => void;
+  rememberPaymentMode: (paymentMode: PaymentMode) => void;
 };
 
 export const useThemeChoice = create<ThemeChoice>()(
@@ -21,11 +25,13 @@ export const useThemeChoice = create<ThemeChoice>()(
       byPhase: {},
       setTheme: (phaseId, themeId) => set((s) => ({ byPhase: { ...s.byPhase, [phaseId]: themeId } })),
       rememberPhase: (lastPhase) => set({ lastPhase }),
+      rememberQrType: (lastQrType) => set({ lastQrType }),
+      rememberPaymentMode: (lastPaymentMode) => set({ lastPaymentMode }),
     }),
     {
       name: "pulse-view",
       storage: createJSONStorage(() => sessionStorage),
-      partialize: (s) => ({ byPhase: s.byPhase, lastPhase: s.lastPhase }),
+      partialize: (s) => ({ byPhase: s.byPhase, lastPhase: s.lastPhase, lastQrType: s.lastQrType, lastPaymentMode: s.lastPaymentMode }),
       // rehydrated from the Stage after mount, like the menu drafts
       skipHydration: true,
     },

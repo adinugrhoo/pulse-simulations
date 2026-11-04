@@ -26,8 +26,11 @@ export function DeviceFrame({
   const hostRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
 
-  const outerW = spec.width + spec.bezel * 2;
-  const outerH = spec.height + spec.bezel * 2;
+  const skin = spec.skin;
+  const outerW = skin ? skin.width : spec.width + spec.bezel * 2;
+  const outerH = skin ? skin.height : spec.height + spec.bezel * 2;
+  /** Screens keep their authored size and scale, letterboxed, into the photo's display. */
+  const screenScale = skin ? Math.min(skin.screen.width / spec.width, skin.screen.height / spec.height) : 1;
 
   useLayoutEffect(() => {
     const el = hostRef.current;
@@ -61,6 +64,31 @@ export function DeviceFrame({
           className="relative"
           style={{ width: outerW * scale, height: outerH * scale, visibility: scale ? "visible" : "hidden" }}
         >
+          {skin ? (
+            <div
+              className="absolute top-0 left-0 origin-top-left"
+              style={{ width: outerW, height: outerH, transform: `scale(${scale})` }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size device photo, drawn at its own pixels */}
+              <img src={skin.src} alt="" width={skin.width} height={skin.height} className="absolute inset-0 select-none" draggable={false} />
+              <div
+                className="absolute flex items-center justify-center overflow-hidden rounded-[4px] bg-black"
+                style={{ left: skin.screen.x, top: skin.screen.y, width: skin.screen.width, height: skin.screen.height }}
+              >
+                <div
+                  className="relative shrink-0 overflow-hidden bg-white"
+                  style={{
+                    ...style,
+                    width: spec.width,
+                    height: spec.height,
+                    transform: `scale(${screenScale})`,
+                  }}
+                >
+                  {children}
+                </div>
+              </div>
+            </div>
+          ) : (
           <div
             className="absolute top-0 left-0 origin-top-left bg-neutral-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] ring-1 ring-neutral-800"
             style={{
@@ -83,6 +111,7 @@ export function DeviceFrame({
               {children}
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { SECTIONS } from "@/config/global";
 import { useSim } from "@/engine/store";
 import { currency, type Table } from "@/engine/types";
 import { TabletTabBar } from "../shared/TabletTabBar";
+import { formatExpiry, qrMinutesLeft } from "../order-detail/DynamicQrPanel";
 import { OrderDetailDialogV2 } from "../order-detail/OrderDetailDialogV2";
 import { OpenTableFlow } from "../sheets/OpenTableSheets";
 import { ConfirmCloseSheet, PaidTableSheet } from "../sheets/PaidTableSheets";
@@ -95,10 +96,13 @@ function TableCard({
   onOpenTable: (tableId: string) => void;
 }) {
   const dispatch = useSim((s) => s.dispatch);
+  const dynamicQr = useSim((s) => s.qrType) === "dynamic";
   const isPaid = table.status === "billed";
   const isOverpaid = isPaid && (table.overpaid ?? 0) > 0;
   const isPartial = table.status === "partial";
   const isSeated = table.status === "occupied" || isPartial || isPaid;
+  /** Dynamic QR: an unpaid table whose QR ran out pulses until the waiter deals with it (paid tables already do). */
+  const qrExpired = dynamicQr && isSeated && !isPaid && qrMinutesLeft(table.seatedMinutes) === 0;
 
   const open = () => {
     if (isPaid) onOpenPaid(table.id);
@@ -158,7 +162,7 @@ function TableCard({
         "flex h-[200px] w-[232px] flex-col items-start rounded-[20px] p-4 text-left transition hover:brightness-110",
         isOverpaid ? "bg-[#8d0b22]" : isPaid ? "bg-[#008b6b]" : "bg-[#917b0a]",
         // paid tables must be closed, so they keep pulsing until they are
-        isOverpaid ? "animate-table-urgent-red" : isPaid && "animate-table-urgent-green",
+        isOverpaid ? "animate-table-urgent-red" : isPaid ? "animate-table-urgent-green" : qrExpired && "animate-table-urgent-amber",
       )}
     >
       <div className="flex h-full w-full flex-1 flex-col items-start justify-between">
@@ -169,19 +173,30 @@ function TableCard({
           <div className="flex w-[133px] flex-col items-start gap-1">
             <p className="w-full text-2xl leading-none font-bold text-white">{table.label}</p>
             <div className="flex items-start gap-1">
+              {/* dynamic QR: the QR's time left leads, in place of how long the table has been seated */}
+              {dynamicQr ? (
+                <div className="flex items-center gap-1.5 p-0.5">
+                  <Image src="/figma/tablet-tables/expiry.svg" alt="" width={14} height={14} />
+                  <span className="text-sm leading-none text-white">
+                    {qrMinutesLeft(table.seatedMinutes) > 0 ? formatExpiry(qrMinutesLeft(table.seatedMinutes)) : "Expired"}
+                  </span>
+                </div>
+              ) : null}
               <div className="flex items-center gap-1.5 p-0.5">
                 <Image src="/figma/tablet-tables/person.svg" alt="" width={14} height={14} />
                 <span className="text-sm leading-none text-white">{table.guests ?? 1}</span>
               </div>
-              <div className="flex items-center gap-1.5 p-0.5">
-                <Image
-                  src={`/figma/tablet-tables/clock-${isPaid ? "green" : "dark"}.svg`}
-                  alt=""
-                  width={14}
-                  height={14}
-                />
-                <span className="text-sm leading-none text-white">{formatSeated(table.seatedMinutes)}</span>
-              </div>
+              {dynamicQr ? null : (
+                <div className="flex items-center gap-1.5 p-0.5">
+                  <Image
+                    src={`/figma/tablet-tables/clock-${isPaid ? "green" : "dark"}.svg`}
+                    alt=""
+                    width={14}
+                    height={14}
+                  />
+                  <span className="text-sm leading-none text-white">{formatSeated(table.seatedMinutes)}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -236,6 +251,7 @@ function TableCard({
 export function TablesScreenV2() {
   const tables = useSim((s) => s.tables);
   const dispatch = useSim((s) => s.dispatch);
+  const qrType = useSim((s) => s.qrType);
   /** Store-driven so the dialog is still open when the waiter comes back from the POS page. */
   const openTableId = useSim((s) => s.waiter.openTableId);
 
@@ -424,6 +440,7 @@ export function TablesScreenV2() {
       {openingTable ? (
         <OpenTableFlow
           table={openingTable}
+          guestInfo={qrType === "static"}
           lastSession={
             openingTable.lastSession
               ? { ref: sessionId(openingTable), ...openingTable.lastSession }
@@ -438,7 +455,14 @@ export function TablesScreenV2() {
       ) : null}
 
       {openTableId ? (
-        <OrderDetailDialogV2 tableId={openTableId} onClose={() => dispatch({ type: "waiter/close-order-detail" })} />
+        <OrderDetailDialogV2
+          tableId={openTableId}
+          onClose={() => dispatch({ type: "waiter/close-order-detail" })}
+          onPaid={(id) => {
+            dispatch({ type: "waiter/close-order-detail" });
+            setPaidSheet({ id, step: "detail" });
+          }}
+        />
       ) : null}
     </div>
   );

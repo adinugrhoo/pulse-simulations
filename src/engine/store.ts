@@ -3,10 +3,10 @@
 import { create } from "zustand";
 import type { SimEvent } from "./events";
 import { reduce } from "./reducer";
-import { getPhase, type PhaseId } from "@/config/phases";
+import { scenarioFor, type PaymentMode, type PhaseId, type QrType } from "@/config/phases";
 import { getActiveMenu } from "@/menu/active";
 import { resolveStepEvent } from "./scenario";
-import { actorOf, initialState, type SimState } from "./state";
+import { actorOf, initialState, type SimState, type TerminalScreen } from "./state";
 import { resolveNav } from "./triggers";
 import type { MobileScreenId, TabletScreenId } from "./screens";
 
@@ -17,9 +17,19 @@ type SimActions = {
   prev: () => void;
   reset: () => void;
   setPhase: (phase: PhaseId) => void;
+  setQrType: (qrType: QrType) => void;
+  setPaymentMode: (paymentMode: PaymentMode) => void;
   setScreen: (mobile?: MobileScreenId, tablet?: TabletScreenId) => void;
   dismissSignal: (id: string) => void;
+  /** SmartPay Terminal picked on the tablet: run the terminal through processing, tap card, done, success. */
+  startTerminalPayment: (tableId: string, amount: number, settleAmount: number) => void;
+  setTerminalScreen: (screen: TerminalScreen) => void;
 };
+
+/** How long each terminal screen holds before the next: processing, tap card, then the done animation. */
+const TERMINAL_PROCESSING_MS = 2000;
+const TERMINAL_TAP_CARD_MS = 3000;
+const TERMINAL_DONE_MS = 2200;
 
 const labelOf = (event: SimEvent) => event.type.split("/")[1].replace(/-/g, " ");
 
@@ -28,7 +38,7 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
 
   dispatch: (event) => {
     if (event.type === "sim/reset") {
-      set({ ...initialState(get().phase) });
+      set({ ...initialState(get().phase, get().qrType, get().paymentMode) });
       return;
     }
     const current = get();
@@ -47,7 +57,7 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
 
   runStep: (index) => {
     const phase = get().phase;
-    const step = getPhase(phase).scenario[index];
+    const step = scenarioFor(phase, get().qrType)[index];
     if (!step) return;
     const event = resolveStepEvent(step, get(), { menu: getActiveMenu(phase) });
     if (event) get().dispatch(event);
@@ -56,25 +66,61 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
 
   next: () => {
     const nextIndex = get().stepIndex + 1;
-    if (nextIndex >= getPhase(get().phase).scenario.length) return;
+    if (nextIndex >= scenarioFor(get().phase, get().qrType).length) return;
     get().runStep(nextIndex);
   },
 
   /** No undo log yet: rewind replays the script from scratch up to the target step. */
   prev: () => {
     const target = get().stepIndex - 1;
-    set({ ...initialState(get().phase) });
+    set({ ...initialState(get().phase, get().qrType, get().paymentMode) });
     for (let i = 0; i <= target; i += 1) get().runStep(i);
     set({ stepIndex: target });
   },
 
-  reset: () => set({ ...initialState(get().phase) }),
+  reset: () => set({ ...initialState(get().phase, get().qrType, get().paymentMode) }),
 
-  setPhase: (phase) => set({ ...initialState(phase) }),
+  setPhase: (phase) => set({ ...initialState(phase, get().qrType, get().paymentMode) }),
+
+  setPaymentMode: (paymentMode) => set({ paymentMode }),
+
+  setQrType: (qrType) => set({ ...initialState(get().phase, qrType, get().paymentMode) }),
 
   setScreen: (mobile, tablet) => get().dispatch({ type: "sim/navigate", mobile, tablet }),
 
   dismissSignal: (id) => set({ signals: get().signals.filter((s) => s.id !== id) }),
+
+  startTerminalPayment: (tableId, amount, settleAmount) => {
+    // a timestamp, so a run started after a reset never matches a timer left over from before it
+    const run = Date.now();
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    set({
+      terminal: {
+        screen: "processing",
+        tableId,
+        amount,
+        run,
+        paidAt: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} • ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+        paymentId: `SP-${5568 + (run % 100)}-${9090 + get().tick}`,
+      },
+    });
+    // each step only fires if no newer payment, reset or phase switch replaced this run
+    const step = (screen: TerminalScreen, after: () => void = () => {}) => () => {
+      const t = get().terminal;
+      if (t.run !== run || t.screen === "idle") return;
+      set({ terminal: { ...t, screen } });
+      after();
+    };
+    setTimeout(step("tap-card"), TERMINAL_PROCESSING_MS);
+    setTimeout(
+      step("done", () => get().dispatch({ type: "waiter/settle-bill", tableId, amount: settleAmount, method: "Card" })),
+      TERMINAL_PROCESSING_MS + TERMINAL_TAP_CARD_MS,
+    );
+    setTimeout(step("success"), TERMINAL_PROCESSING_MS + TERMINAL_TAP_CARD_MS + TERMINAL_DONE_MS);
+  },
+
+  setTerminalScreen: (screen) => set({ terminal: { ...get().terminal, screen } }),
 }));
 
 export const useMobileScreen = () => useSim((s) => s.screens.mobile);

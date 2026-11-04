@@ -7,7 +7,16 @@ import { cn } from "@/lib/cn";
 import { currency } from "@/engine/types";
 import { useSim } from "@/engine/store";
 import { OpenTableFlow } from "../sheets/OpenTableSheets";
-import { CashPaymentSheet, CollectPaymentSheet, PaymentConfirmedSheet, pressKey } from "../sheets/CollectPaymentSheets";
+import { SameDevicePaymentOverlay } from "../sheets/SameDevicePayment";
+import { ScanToOrderSheet } from "../sheets/ScanToOrderSheet";
+import { DynamicQrPanel, formatExpiry, qrMinutesLeft } from "./DynamicQrPanel";
+import {
+  CashPaymentSheet,
+  CollectPaymentSheet,
+  CompletePaymentSheet,
+  PaymentConfirmedSheet,
+  pressKey,
+} from "../sheets/CollectPaymentSheets";
 import { ConfirmCloseSheet, PaymentSummarySheet } from "../sheets/PaidTableSheets";
 import { DishImage } from "@/menu/DishImage";
 import { useMenu } from "@/menu/hooks";
@@ -165,10 +174,16 @@ function InsightRow({
 function DishCard({
   dish,
   reorders,
+  showTags,
+  disabled,
   onAdd,
 }: {
   dish: Dish;
   reorders: number;
+  /** Match and reorder ribbons come from the guest profile, so they hide until a guest is on the table. */
+  showTags: boolean;
+  /** Dynamic QR that has expired: nothing more can be ordered onto the table. */
+  disabled: boolean;
   /** Confirming the stepper sends `qty` of the dish straight to the table's order items. */
   onAdd: (qty: number) => void;
 }) {
@@ -185,7 +200,7 @@ function DishCard({
         <DishImage src={dish.image} alt={dish.name} className="object-cover" />
       </div>
 
-      <div className="flex min-w-px flex-1 flex-col items-end gap-2 pt-5 pb-1">
+      <div className={cn("flex min-w-px flex-1 flex-col items-end gap-2 pb-1", showTags ? "pt-5" : "pt-1")}>
         <div className="flex w-full flex-col items-start gap-2">
           <p className="w-full text-sm leading-[1.1] break-words text-[#fcdfa2]">{dish.name}</p>
           {dish.description ? (
@@ -217,11 +232,14 @@ function DishCard({
           <button
             type="button"
             onClick={() => setQty(1)}
-            className="flex h-9 w-[140px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#e8bc6b] p-4 transition hover:brightness-125"
-            style={{ backgroundImage: GRAD_ADD }}
+            disabled={disabled}
+            className="flex h-9 w-[140px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#e8bc6b] p-4 transition hover:brightness-125 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#3a3a3a] disabled:hover:brightness-100"
+            style={disabled ? undefined : { backgroundImage: GRAD_ADD }}
           >
-            <Image src={`${ASSET}/plus.svg`} alt="" width={14} height={14} className="size-[14px]" />
-            <span className="text-sm leading-none font-bold whitespace-nowrap text-[#fff8eb]">Add to Order</span>
+            <Image src={`${ASSET}/plus.svg`} alt="" width={14} height={14} className={cn("size-[14px]", disabled && "opacity-40")} />
+            <span className={cn("text-sm leading-none font-bold whitespace-nowrap", disabled ? "text-[#939393]" : "text-[#fff8eb]")}>
+              Add to Order
+            </span>
           </button>
         ) : (
           <div className="flex h-9 shrink-0 items-center gap-1.5">
@@ -261,10 +279,12 @@ function DishCard({
       </div>
 
       {/* match / reorder ribbons hang one pixel above the card edge, per Figma */}
-      <div className="absolute top-[-1px] left-[109px] flex items-center justify-center rounded-b-md bg-[#00abb6] px-2 py-[5px]">
-        <span className="text-[10px] leading-[1.2] font-bold whitespace-nowrap text-white">{MATCH_PCT}% Match</span>
-      </div>
-      {reorders > 0 ? (
+      {showTags ? (
+        <div className="absolute top-[-1px] left-[109px] flex items-center justify-center rounded-b-md bg-[#00abb6] px-2 py-[5px]">
+          <span className="text-[10px] leading-[1.2] font-bold whitespace-nowrap text-white">{MATCH_PCT}% Match</span>
+        </div>
+      ) : null}
+      {showTags && reorders > 0 ? (
         <div className="absolute top-[-1px] left-[180px] flex items-center justify-center rounded-b-md bg-[#6c31cf] px-2 py-[5px]">
           <span className="text-[10px] leading-[1.2] font-bold whitespace-nowrap text-white">{reorders}x Reorder</span>
         </div>
@@ -288,15 +308,26 @@ function DishCard({
  * action are live sim state. Recommendation cards carry the mobile menu catalog
  * (src/sim/menuCatalog.ts) so both devices quote the same dishes, prices and photos.
  */
-export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onClose: () => void }) {
+export function OrderDetailDialogV2({
+  tableId,
+  onClose,
+  onPaid,
+}: {
+  tableId: string;
+  onClose: () => void;
+  /** Called when a payment has gone through and the waiter moves on: the floor closes this dialog and shows the paid table's Close Table sheet. */
+  onPaid?: (tableId: string) => void;
+}) {
   const [show, setShow] = useState(false);
   /** Default is the table-wide Pulse Summary; tapping a guest avatar swaps in that person's card. */
   const [view, setView] = useState<GuestView>("all");
   const [addingGuest, setAddingGuest] = useState(false);
+  /** Dynamic QR: "+ Add" opens the Scan to Order sheet first; its Add Guest button leads on to the guest form. */
+  const [scanningQr, setScanningQr] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   /** Pay Bill flow: pick a method, key in the cash handed over, then the receipt. */
-  const [payStep, setPayStep] = useState<"method" | "cash" | "confirmed" | null>(null);
+  const [payStep, setPayStep] = useState<"method" | "cash" | "confirmed" | "terminal" | null>(null);
   const [cashAmount, setCashAmount] = useState("");
   useEffect(() => {
     const raf = requestAnimationFrame(() => setShow(true));
@@ -304,10 +335,16 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
   }, []);
 
   const dispatch = useSim((s) => s.dispatch);
+  const terminalPayment = useSim((s) => s.paymentMode) === "terminal";
+  const startTerminalPayment = useSim((s) => s.startTerminalPayment);
+  const terminalScreen = useSim((s) => s.terminal.screen);
+  const terminalAmount = useSim((s) => s.terminal.amount);
   const table = useSim((s) => s.tables.find((t) => t.id === tableId));
   const orders = useSim((s) => s.orders);
   const waiterCart = useSim((s) => s.waiter.cart);
   const customerName = useSim((s) => s.customer.guestName);
+  /** Dynamic QR: the left column is the table's QR and the guest info comes from the customer. */
+  const dynamicQr = useSim((s) => s.qrType) === "dynamic";
 
   const isPaid = table?.status === "billed";
   /** A paid table still lists what was paid for; otherwise only the open (unsettled) orders. Dishes only: the seeded service charge line is not shown. */
@@ -344,6 +381,10 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
 
   if (!table) return null;
 
+  /** Dynamic QR: no guest until the customer's info is in (the first order stands in a placeholder), so the QR shows and nothing matches dishes. */
+  const hasGuest = !dynamicQr || !!table.guestName;
+  /** An expired dynamic QR closes the table to new orders: Add Order, Add to Order and QR Order go dark. */
+  const qrExpired = dynamicQr && qrMinutesLeft(table.seatedMinutes) === 0;
   const guestName = table.guestName ?? customerName ?? "Ash";
   const initial = guestName.slice(0, 1).toUpperCase();
   const pendingCount = waiterCart.reduce((n, l) => n + l.qty, 0);
@@ -364,6 +405,12 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
       line: { itemId: dish.id, name: dish.name, unitPrice: dish.price, qty },
     });
     dispatch({ type: "waiter/submit-order", tableId });
+  };
+  /** A paid bill ends the order detail: straight to the floor's Close Table sheet for this table. */
+  const finishPayment = () => {
+    setPayStep(null);
+    if (onPaid) onPaid(tableId);
+    else close();
   };
   const openPos = () => dispatch({ type: "waiter/open-pos", tableId });
   const closeTable = () => dispatch({ type: "waiter/close-table", tableId });
@@ -411,13 +458,14 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
 
         <div className="relative h-[760px] w-[1182px] shrink-0 overflow-hidden rounded-[24px] bg-[#101213]">
           {/* ------------------------- guest profiling ------------------------ */}
-          <div className="absolute top-2 left-2 h-[670px] w-[360px] overflow-x-clip overflow-y-auto">
+          {!hasGuest ? <DynamicQrPanel minutesLeft={qrMinutesLeft(table.seatedMinutes)} /> : null}
+          <div className={cn("absolute top-2 left-2 h-[670px] w-[360px] overflow-x-clip overflow-y-auto", !hasGuest && "hidden")}>
             <div className="flex min-h-full w-[360px] flex-col items-start rounded-tl-[20px] bg-[#17181a] p-[26px]">
               <div className="flex w-full items-center justify-between">
                 <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">Guest list</p>
                 <button
                   type="button"
-                  onClick={() => setAddingGuest(true)}
+                  onClick={() => (dynamicQr ? setScanningQr(true) : setAddingGuest(true))}
                   className="-mr-2 flex items-center gap-0.5 rounded-lg px-2 py-1.5 transition hover:bg-white/5"
                 >
                   <Image src={`${ASSET}/plus-small.svg`} alt="" width={14} height={14} className="size-[14px]" />
@@ -536,6 +584,8 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
                     key={dish.id}
                     dish={dish}
                     reorders={reorderCount.get(dish.id) ?? SEEDED_REORDERS[i] ?? 0}
+                    showTags={hasGuest}
+                    disabled={qrExpired}
                     onAdd={(qty) => addDish(dish, qty)}
                   />
                 ))}
@@ -552,8 +602,14 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
               </div>
               <div className="flex w-full items-center justify-center rounded-lg bg-[#1b1b1a] p-3">
                 <div className="flex items-center gap-4">
+                  {dynamicQr ? (
+                    <StatItem
+                      icon="expiry"
+                      label={qrMinutesLeft(table.seatedMinutes) > 0 ? `${formatExpiry(qrMinutesLeft(table.seatedMinutes))} until expiry` : "QR expired"}
+                    />
+                  ) : null}
                   <StatItem icon="person" label={`${table.guests ?? 1} pax`} />
-                  <StatItem icon="clock" label={formatSeated(table.seatedMinutes ?? 0)} />
+                  {dynamicQr ? null : <StatItem icon="clock" label={formatSeated(table.seatedMinutes ?? 0)} />}
                 </div>
               </div>
             </div>
@@ -673,7 +729,7 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
 
           {/* --------------------------- action bar --------------------------- */}
           <div className="absolute top-[678px] left-2 flex h-[74px] w-[1166px] items-center justify-between rounded-b-2xl bg-[#1b1b1a] px-6 py-4">
-            <div className="flex w-[332px] items-center gap-2.5">
+            <div className={cn("flex items-center gap-2.5", dynamicQr ? "w-[480px]" : "w-[332px]")}>
               {noOrders ? (
                 <button
                   onClick={() => setConfirmingClose(true)}
@@ -682,24 +738,40 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
                   <span className="text-sm leading-none font-bold whitespace-nowrap text-[#ffffef]">Close Table</span>
                 </button>
               ) : (
-                <>
-                  <button
-                    onClick={payBill}
-                    disabled={isPaid}
-                    className="flex min-w-px flex-1 items-center justify-center rounded-xl border border-[#e8bc6b] p-4 transition hover:brightness-110 disabled:opacity-40"
-                    style={fill(GRAD_PAY)}
-                  >
-                    <span className="text-sm leading-none font-bold whitespace-nowrap text-[#ffffef]">Pay Bill</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="flex w-[102px] items-center justify-center gap-1.5 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4"
-                  >
-                    <Image src={`${ASSET}/printer.svg`} alt="" width={14} height={14} className="size-[14px]" />
-                    <span className="text-sm leading-none font-bold whitespace-nowrap text-[#fff8eb]">Receipt</span>
-                  </button>
-                </>
+                <button
+                  onClick={payBill}
+                  disabled={isPaid}
+                  className="flex min-w-px flex-1 items-center justify-center rounded-xl border border-[#e8bc6b] p-4 transition hover:brightness-110 disabled:opacity-40"
+                  style={fill(GRAD_PAY)}
+                >
+                  <span className="text-sm leading-none font-bold whitespace-nowrap text-[#ffffef]">Pay Bill</span>
+                </button>
               )}
+              {/* a dynamic-QR table shows Receipt even while empty (Figma 3152:16286) */}
+              {!noOrders || dynamicQr ? (
+                <button
+                  type="button"
+                  className="flex w-[102px] items-center justify-center gap-1.5 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4"
+                >
+                  <Image src={`${ASSET}/printer.svg`} alt="" width={14} height={14} className="size-[14px]" />
+                  <span className="text-sm leading-none font-bold whitespace-nowrap text-[#fff8eb]">Receipt</span>
+                </button>
+              ) : null}
+              {dynamicQr ? (
+                <button
+                  type="button"
+                  disabled={qrExpired}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#3a3a3a]",
+                    qrExpired ? "w-[124px]" : "w-[102px]",
+                  )}
+                >
+                  <Image src={`${ASSET}/printer.svg`} alt="" width={14} height={14} className={cn("size-[14px]", qrExpired && "opacity-40")} />
+                  <span className={cn("text-sm leading-none font-bold whitespace-nowrap", qrExpired ? "text-[#939393]" : "text-[#fff8eb]")}>
+                    {qrExpired ? "QR expired" : "QR Order"}
+                  </span>
+                </button>
+              ) : null}
             </div>
 
             <div className="flex items-center justify-end gap-2.5">
@@ -714,10 +786,11 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
               </button>
               <button
                 onClick={openPos}
-                className="flex w-[120px] items-center justify-center gap-1.5 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4 transition hover:brightness-125"
+                disabled={qrExpired}
+                className="flex w-[120px] items-center justify-center gap-1.5 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4 transition hover:brightness-125 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#3a3a3a] disabled:hover:brightness-100"
               >
-                <Image src={`${ASSET}/plus.svg`} alt="" width={14} height={14} className="size-[14px]" />
-                <span className="text-sm leading-none font-bold whitespace-nowrap text-[#fff8eb]">
+                <Image src={`${ASSET}/plus.svg`} alt="" width={14} height={14} className={cn("size-[14px]", qrExpired && "opacity-40")} />
+                <span className={cn("text-sm leading-none font-bold whitespace-nowrap", qrExpired ? "text-[#939393]" : "text-[#fff8eb]")}>
                   Add Order{pendingCount > 0 ? ` (${pendingCount})` : ""}
                 </span>
               </button>
@@ -726,6 +799,17 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
         </div>
       </div>
 
+      {scanningQr ? (
+        <ScanToOrderSheet
+          table={table}
+          minutesLeft={qrMinutesLeft(table.seatedMinutes)}
+          onClose={() => setScanningQr(false)}
+          onAddGuest={() => {
+            setScanningQr(false);
+            setAddingGuest(true);
+          }}
+        />
+      ) : null}
       {addingGuest ? (
         <OpenTableFlow table={table} mode="add-guest" onClose={() => setAddingGuest(false)} onConfirm={() => setAddingGuest(false)} />
       ) : null}
@@ -742,7 +826,17 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
         />
       ) : null}
       {payStep === "method" ? (
-        <CollectPaymentSheet total={totalBill} onClose={() => setPayStep(null)} onCash={() => setPayStep("cash")} />
+        <CollectPaymentSheet
+          total={totalBill}
+          onClose={() => setPayStep(null)}
+          onCash={() => setPayStep("cash")}
+          onSmartPay={() => {
+            // charges what is still owed; settling records the full bill like Cash does. The steps
+            // play on the Adyen terminal, or full screen on this tablet in same-device mode
+            startTerminalPayment(tableId, balance, totalBill);
+            setPayStep("terminal");
+          }}
+        />
       ) : null}
       {payStep === "cash" ? (
         <CashPaymentSheet
@@ -753,8 +847,27 @@ export function OrderDetailDialogV2({ tableId, onClose }: { tableId: string; onC
           onConfirm={confirmCash}
         />
       ) : null}
+      {/* the terminal reaching its confirmation page is what flips the waiting sheet to Payment Confirmed */}
+      {payStep === "terminal" && terminalScreen !== "success" ? (
+        terminalPayment ? (
+          <CompletePaymentSheet onClose={() => setPayStep(null)} />
+        ) : (
+          <div className="absolute inset-0 z-50">
+            <SameDevicePaymentOverlay screen={terminalScreen} amount={terminalAmount ?? balance} />
+          </div>
+        )
+      ) : null}
+      {payStep === "terminal" && terminalScreen === "success" ? (
+        <PaymentConfirmedSheet
+          total={totalBill}
+          tendered={terminalAmount ?? totalBill}
+          method="Card"
+          backLabel="Continue"
+          onClose={finishPayment}
+        />
+      ) : null}
       {payStep === "confirmed" ? (
-        <PaymentConfirmedSheet total={totalBill} tendered={Number(cashAmount) || totalBill} onClose={close} />
+        <PaymentConfirmedSheet total={totalBill} tendered={Number(cashAmount) || totalBill} backLabel="Continue" onClose={finishPayment} />
       ) : null}
       {confirmingClose ? (
         <ConfirmCloseSheet table={table} onDismiss={() => setConfirmingClose(false)} onConfirm={closeTable} />

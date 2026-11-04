@@ -118,11 +118,13 @@ function CountrySheet({
 /**
  * Figma 2066:3724: the waiter opens a vacant table. Pax, then the guest's phone (with country
  * code) and name; Confirm unlocks once all three are filled. Picking the country code swaps
- * in the country sheet (2563:13719).
+ * in the country sheet (2563:13719). With `guestInfo` off (dynamic QR) only pax is asked: the
+ * customer fills in their own phone and name on their phone.
  */
 export function OpenTableFlow({
   table,
   mode = "open",
+  guestInfo = true,
   lastSession,
   onClose,
   onConfirm,
@@ -132,10 +134,13 @@ export function OpenTableFlow({
   lastSession?: { ref: string; paidBill: number; minutesAgo: number };
   /** "add-guest" drops the pax picker and retitles the sheet; the guest still needs phone and name. */
   mode?: "open" | "add-guest";
+  /** Ask for the guest's phone and name. Off when the customer enters them (dynamic QR). */
+  guestInfo?: boolean;
   onClose: () => void;
   onConfirm: (guest: { guests: number; guestName: string; phone: string }) => void;
 }) {
   const adding = mode === "add-guest";
+  const askGuest = guestInfo || adding;
   const [country, setCountry] = useState(COUNTRIES[0]);
   const [pickingCountry, setPickingCountry] = useState(false);
   const [pax, setPax] = useState<number | null>(null);
@@ -144,7 +149,8 @@ export function OpenTableFlow({
   const [name, setName] = useState("");
 
   const digits = phone.replace(/\D/g, "");
-  const ready = (adding || (pax !== null && pax > 0)) && digits.length >= 7 && name.trim().length > 0;
+  const ready =
+    (adding || (pax !== null && pax > 0)) && (!askGuest || (digits.length >= 7 && name.trim().length > 0));
 
   if (pickingCountry) {
     return (
@@ -161,11 +167,15 @@ export function OpenTableFlow({
 
   const confirm = () => {
     if (!ready || (!adding && pax === null)) return;
-    onConfirm({ guests: adding ? 0 : (pax ?? 0), guestName: name.trim(), phone: `${country.code} ${phone.trim()}` });
+    onConfirm({
+      guests: adding ? 0 : (pax ?? 0),
+      guestName: askGuest ? name.trim() : "",
+      phone: askGuest ? `${country.code} ${phone.trim()}` : "",
+    });
   };
 
   return (
-    <Sheet width={460} height={adding ? 476 : lastSession ? 770 : 706} onClose={onClose}>
+    <Sheet width={460} height={(adding ? 476 : lastSession ? 770 : 706) - (askGuest ? 0 : 266)} onClose={onClose}>
       <div className="absolute top-[58px] left-[30px] flex w-[400px] items-center justify-between">
         <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">{adding ? "Add guest" : table.label}</p>
         <CloseIcon size={42} onClick={onClose} />
@@ -243,6 +253,7 @@ export function OpenTableFlow({
         </div>
         )}
 
+        {askGuest ? (
         <div className="flex flex-col gap-5">
           <p className="text-lg leading-none font-semibold text-[#cdcdcd]">Guest info</p>
           <div className="flex flex-col gap-3">
@@ -279,6 +290,7 @@ export function OpenTableFlow({
             </div>
           </div>
         </div>
+        ) : null}
       </div>
 
       <div className="absolute bottom-0 left-0 flex h-[94px] w-[460px] items-center justify-center bg-[#0c0c0b]">

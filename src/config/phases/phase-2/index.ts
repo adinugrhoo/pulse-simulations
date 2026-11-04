@@ -2,6 +2,7 @@ import type { PhaseConfig } from "@/config/types";
 import { seedTablesV2 } from "@/engine/seed";
 import type { MenuPatch } from "@/menu/types";
 import menu from "./menu.json";
+import { DYNAMIC_SCENARIO } from "./scenario-dynamic";
 import { SCENARIO } from "./scenario";
 import { theme as dark } from "./themes/dark";
 import { theme as foodpanda } from "./themes/foodpanda";
@@ -16,7 +17,7 @@ export const phase: PhaseConfig = {
   tone: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
   features: { floor: "sections", splitBill: true },
   seedTables: seedTablesV2,
-  scenario: SCENARIO,
+  scenarios: { static: SCENARIO, dynamic: DYNAMIC_SCENARIO },
   menu: menu as MenuPatch,
   themes: [dark, light, foodpanda],
   defaultTheme: "dark",

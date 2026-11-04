@@ -1,5 +1,6 @@
 import { GLOBAL_CONFIG } from "@/config/global";
-import type { PhaseConfig, PhaseId, ThemeConfig, ThemeId } from "@/config/types";
+import type { Step } from "@/engine/scenario";
+import type { PaymentMode, PhaseConfig, PhaseId, QrType, ThemeConfig, ThemeId } from "@/config/types";
 import { phase as phase1 } from "./phase-1";
 import { phase as phase2 } from "./phase-2";
 
@@ -23,4 +24,10 @@ export const getTheme = (phaseId: PhaseId, themeId?: ThemeId): ThemeConfig => {
   );
 };
 
-export type { PhaseConfig, PhaseId, ThemeConfig, ThemeId };
+/** The steps the stepper runs for a phase and QR type; dynamic falls back to static until it has its own. */
+export const scenarioFor = (phaseId: PhaseId, qrType: QrType): Step[] => {
+  const { scenarios } = getPhase(phaseId);
+  return scenarios[qrType] ?? scenarios.static;
+};
+
+export type { PaymentMode, PhaseConfig, PhaseId, QrType, ThemeConfig, ThemeId };

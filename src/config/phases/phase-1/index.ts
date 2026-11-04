@@ -2,6 +2,7 @@ import type { PhaseConfig } from "@/config/types";
 import { seedTablesV1 } from "@/engine/seed";
 import type { MenuPatch } from "@/menu/types";
 import menu from "./menu.json";
+import { DYNAMIC_SCENARIO } from "./scenario-dynamic";
 import { SCENARIO } from "./scenario";
 import { theme as defaultTheme } from "./themes/default";
 
@@ -14,7 +15,7 @@ export const phase: PhaseConfig = {
   tone: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30",
   features: { floor: "plan", splitBill: false },
   seedTables: seedTablesV1,
-  scenario: SCENARIO,
+  scenarios: { static: SCENARIO, dynamic: DYNAMIC_SCENARIO },
   menu: menu as MenuPatch,
   themes: [defaultTheme],
   defaultTheme: "default",
