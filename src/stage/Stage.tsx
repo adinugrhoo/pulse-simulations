@@ -11,6 +11,8 @@ import { StageErrorBoundary } from "./ErrorBoundary";
 import { TabletDevice } from "./device/TabletDevice";
 import { PhaseSelect } from "./header/PhaseSelect";
 import { ScenarioBar } from "./header/ScenarioBar";
+import { PaymentModeSelect } from "./header/PaymentModeSelect";
+import { QrTypeSelect } from "./header/QrTypeSelect";
 import { ThemeSelect } from "./header/ThemeSelect";
 import { MenuStudioButton } from "./studio/MenuStudio";
 
@@ -23,13 +25,17 @@ export function Stage() {
     let cancelled = false;
     void Promise.all([useMenuStore.persist.rehydrate(), useThemeChoice.persist.rehydrate()]).then(() => {
       if (cancelled) return;
-      const { lastPhase } = useThemeChoice.getState();
+      const { lastPhase, lastQrType, lastPaymentMode } = useThemeChoice.getState();
       const known = PHASES.some((p) => p.id === lastPhase);
       // always re-seed: the first seed ran before the drafts and theme choice were loaded
+      if (lastQrType) useSim.setState({ qrType: lastQrType });
+      if (lastPaymentMode) useSim.setState({ paymentMode: lastPaymentMode });
       useSim.getState().setPhase(known ? lastPhase! : useSim.getState().phase);
-      // from here on, remember every phase switch
+      // from here on, remember every phase, QR type and payment mode switch
       stop = useSim.subscribe((s, prev) => {
         if (s.phase !== prev.phase) useThemeChoice.getState().rememberPhase(s.phase);
+        if (s.qrType !== prev.qrType) useThemeChoice.getState().rememberQrType(s.qrType);
+        if (s.paymentMode !== prev.paymentMode) useThemeChoice.getState().rememberPaymentMode(s.paymentMode);
       });
     });
     return () => {
@@ -45,6 +51,8 @@ export function Stage() {
           <h1 className="text-sm font-semibold tracking-wide">{GLOBAL_CONFIG.appName}</h1>
           <PhaseSelect />
           <ThemeSelect />
+          <QrTypeSelect />
+          <PaymentModeSelect />
           <MenuStudioButton />
         </div>
         <ScenarioBar />

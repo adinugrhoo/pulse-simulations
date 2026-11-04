@@ -1,6 +1,6 @@
 import type { MobileScreenId, TabletScreenId } from "./screens";
 import { DEFAULT_TABLE_ID } from "@/config/global";
-import { DEFAULT_PHASE, getPhase, type PhaseId } from "@/config/phases";
+import { DEFAULT_PHASE, getPhase, type PaymentMode, type PhaseId, type QrType } from "@/config/phases";
 import { getActiveMenu } from "@/menu/active";
 import type { CustomerSession, Order, Signal, Table, WaiterSession } from "./types";
 import type { SimEvent } from "./events";
@@ -13,9 +13,27 @@ export type LogEntry = {
   event: SimEvent;
 };
 
+/** What the Adyen terminal shows in payment mode "terminal": idle keypad, then the SmartPay card flow. */
+export type TerminalScreen = "idle" | "processing" | "tap-card" | "done" | "success";
+
+export type TerminalState = {
+  screen: TerminalScreen;
+  /** The table being charged and the amount due on it, set when the waiter picks SmartPay Terminal. */
+  tableId?: string;
+  amount?: number;
+  /** Bumped on every new payment so a stale timer from an earlier run never moves the screen. */
+  run: number;
+  paidAt?: string;
+  paymentId?: string;
+};
+
 export type SimState = {
   /** Which build phase's scenario the stepper runs. Survives reset. */
   phase: PhaseId;
+  /** Static or dynamic QR flow; picks which scenario the stepper runs. Survives reset. */
+  qrType: QrType;
+  /** Same device (pay on the tablet) or a payment terminal in place of the customer phone. Survives reset. */
+  paymentMode: PaymentMode;
   /** Monotonic counter — stands in for wall-clock so replays stay deterministic. */
   tick: number;
   tables: Table[];
@@ -24,14 +42,21 @@ export type SimState = {
   waiter: WaiterSession;
   screens: { mobile: MobileScreenId; tablet: TabletScreenId };
   signals: Signal[];
+  terminal: TerminalState;
   log: LogEntry[];
   stepIndex: number;
 };
 
-export const initialState = (phase: PhaseId = DEFAULT_PHASE): SimState => {
+export const initialState = (
+  phase: PhaseId = DEFAULT_PHASE,
+  qrType: QrType = "static",
+  paymentMode: PaymentMode = "same-device",
+): SimState => {
   const tables = getPhase(phase).seedTables();
   return {
     phase,
+    qrType,
+    paymentMode,
     tick: 0,
     tables,
     // every table already carrying a bill gets the items behind it, from the menu on screen
@@ -40,6 +65,7 @@ export const initialState = (phase: PhaseId = DEFAULT_PHASE): SimState => {
     waiter: { cart: [] },
     screens: { mobile: "login", tablet: "tables" },
     signals: [],
+    terminal: { screen: "idle", run: 0 },
     log: [],
     stepIndex: -1,
   };

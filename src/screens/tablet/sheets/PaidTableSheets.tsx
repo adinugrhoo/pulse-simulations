@@ -24,7 +24,8 @@ export function Sheet({
 }: {
   width: number;
   height: number;
-  onClose: () => void;
+  /** Omit to make the sheet mandatory: no backdrop dismiss. */
+  onClose?: () => void;
   children: React.ReactNode;
 }) {
   const [show, setShow] = useState(false);
@@ -38,6 +39,7 @@ export function Sheet({
       <button
         aria-label="Dismiss"
         onClick={onClose}
+        disabled={!onClose}
         className={cn("absolute inset-0 bg-black/70 transition-opacity duration-200", show ? "opacity-100" : "opacity-0")}
       />
       <div
@@ -87,7 +89,7 @@ export function PaidTableSheet({
     : [{ ...SEEDED_PAYMENT, amount: paid, guest }];
 
   return (
-    <Sheet width={460} height={649} onClose={onClose}>
+    <Sheet width={460} height={649}>
       <div className="absolute top-[58px] left-[30px] flex w-[400px] items-center justify-between">
         <div className="flex items-center gap-2">
           <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">{table.label}</p>
@@ -95,7 +97,6 @@ export function PaidTableSheet({
             Paid
           </span>
         </div>
-        <CloseIcon size={42} onClick={onClose} />
       </div>
 
       <div className="absolute top-[108px] right-0 bottom-[94px] left-0 overflow-y-auto">
@@ -187,10 +188,9 @@ export function ConfirmCloseSheet({
   const overpaid = table.overpaid ?? 0;
 
   return (
-    <Sheet width={360} height={440} onClose={onDismiss}>
+    <Sheet width={360} height={440}>
       <div className="absolute top-[58px] left-5 flex w-[320px] items-center justify-between">
         <p className="text-lg leading-none font-bold whitespace-nowrap text-white">Confirmation</p>
-        <CloseIcon size={32} onClick={onDismiss} />
       </div>
 
       <div className="absolute top-[120px] left-1/2 flex w-[320px] -translate-x-1/2 items-center justify-center rounded-lg bg-[#1b1b1b] px-8 py-4">

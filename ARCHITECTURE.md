@@ -4,7 +4,7 @@ Full-site view of one restaurant ordering flow across two devices on a single sc
 
 - **Left — mobile (375×812)**: the customer. Scans, logs in, browses the menu, places the order, asks for the bill.
 - **Right — tablet (1280×800)**: the waiter. Reviews incoming orders, updates their status, and can place orders too.
-- **Header**: the scenario stepper — current step, chevron dropdown with the full step list, an event-log dropdown, and Back / Next / Reset.
+- **Header**: the scenario stepper — current step, chevron dropdown with the full step list, and Back / Next / Reset.
 
 Both devices read from one in-memory store, so a customer action is reflected on the tablet in the same frame.
 
@@ -50,7 +50,8 @@ src/config/
     screens.ts                phase id → screen registry (kept apart: the engine never imports UI)
     phase-1/                  one folder per phase
       index.ts                PhaseConfig: label, chip, features, seedTables, scenario, themes
-      scenario.ts             the scripted steps the header stepper runs
+      scenario.ts             the static-QR steps the header stepper runs
+      scenario-dynamic.ts     the dynamic-QR steps (replays the static ones until its flow is written)
       menu.json               menu patch for this phase
       screens.ts              full mobile + tablet registry for this phase, plus theme swaps
       themes/
@@ -78,7 +79,12 @@ Rules of thumb:
   phase + theme on screen; `getActiveMenu(phase)` does the same outside React (engine seeds, scenario steps).
 - **Registries stack the same way.** `screens/<device>/registry.tsx` is the default; a phase's `screens.ts` overrides
   entries (Phase 2.0 swaps `tables` for `TablesScreenV2`); a theme's `mobile/screens.ts` / `tablet/screens.ts` can swap more.
-- The header remembers the selected phase and each phase's theme for the browser session (`src/theme/store.ts`).
+- The header's **QR Type** (Static / Dynamic) picks which of a phase's `scenarios` the stepper runs (`scenarioFor` in
+  `phases/index.ts`; a missing `dynamic` falls back to `static`). Screens are shared; only the steps differ.
+- The header's **Payment** (Same device / Payment terminal) is `paymentMode` in the sim state. Payment terminal swaps
+  the customer phone for an Adyen photo (`DEVICES.terminal`, a `skin` in `config/global/devices.ts`); the mobile
+  screens render inside its display, scaled to fit.
+- The header remembers the selected phase, QR type, payment mode and each phase's theme for the browser session (`src/theme/store.ts`).
 
 ### Adding a theme
 

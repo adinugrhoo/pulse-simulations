@@ -49,6 +49,19 @@ body {
   }
 }
 
+/* dynamic QR: an unpaid table whose QR expired pulses in the card's own amber */
+@keyframes table-urgent-amber {
+  0%,
+  100% {
+    background-color: #917b0a;
+    box-shadow: 0 0 0 0 rgba(145, 123, 10, 0);
+  }
+  50% {
+    background-color: #b89c10;
+    box-shadow: 0 0 0 10px rgba(145, 123, 10, 0.55);
+  }
+}
+
 /* the Session ID / Paid Bill box inside the card pulses in step with it */
 @keyframes table-urgent-inner-green {
   0%,
@@ -86,6 +99,10 @@ body {
   animation: table-urgent-red 1.1s ease-in-out infinite;
 }
 
+.animate-table-urgent-amber {
+  animation: table-urgent-amber 1.1s ease-in-out infinite;
+}
+
 /* Waiter table card flashes a few times right after a bill is paid in full. */
 @keyframes table-paid-blink {
   0%,
@@ -109,4 +126,132 @@ body {
 }
 .animate-count-pop {
   animation: count-pop 220ms ease-out;
+}
+
+/* SmartPay terminal "done": green floods in, the disc pops, the check draws itself, rings ripple out */
+@keyframes terminal-done-flood {
+  from {
+    clip-path: circle(0% at 50% 194px);
+  }
+  to {
+    clip-path: circle(150% at 50% 194px);
+  }
+}
+
+@keyframes terminal-done-disc {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  80% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes terminal-done-badge {
+  0% {
+    transform: scale(0) rotate(-45deg);
+  }
+  70% {
+    transform: scale(1.2) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes terminal-done-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes terminal-done-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes terminal-done-rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes terminal-done-confetti {
+  0% {
+    transform: translate(0, 0) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-terminal-done-flood {
+  animation: terminal-done-flood 0.45s ease-out both;
+}
+
+.animate-terminal-done-disc {
+  animation: terminal-done-disc 0.6s 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-terminal-done-badge {
+  animation: terminal-done-badge 0.45s 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-terminal-done-check {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: terminal-done-check 0.35s 0.9s ease-out forwards;
+}
+
+.animate-terminal-done-ring {
+  animation: terminal-done-ring 1.2s 0.8s ease-out infinite;
+}
+
+.animate-terminal-done-rise {
+  animation: terminal-done-rise 0.4s 1s ease-out both;
+}
+
+.animate-terminal-done-confetti {
+  animation: terminal-done-confetti 0.9s 0.85s ease-out both;
+}
+
+/* same-device payment "Approved": the tablet's check is longer, so its dash runs further */
+.animate-approved-check {
+  stroke-dasharray: 90;
+  stroke-dashoffset: 90;
+  animation: terminal-done-check 0.45s 0.55s ease-out forwards;
+}
+
+/* the active dot on "Present card" breathes while the reader waits */
+@keyframes reader-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-reader-dot {
+  animation: reader-dot-pulse 1.2s ease-in-out infinite;
 }

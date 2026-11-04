@@ -1,24 +1,31 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { currency } from "@/engine/types";
 import { CloseIcon, Sheet } from "./PaidTableSheets";
 
 const ASSET = "/figma/tablet-payment";
 
-/** Figma 2928:17061: pick how the waiter collects the bill. Only the offline Cash option exists. */
+/**
+ * Figma 3148:14809: pick how the waiter collects the bill. Online goes to the SmartPay terminal,
+ * offline is Cash or a manual collect. Only Cash has a flow behind it.
+ */
 export function CollectPaymentSheet({
   total,
   onClose,
   onCash,
+  onSmartPay,
 }: {
   total: number;
   onClose: () => void;
   onCash: () => void;
+  /** Only wired in payment mode "terminal", where the Adyen terminal runs the card flow. */
+  onSmartPay?: () => void;
 }) {
   return (
-    <Sheet width={460} height={386} onClose={onClose}>
+    <Sheet width={460} height={548} onClose={onClose}>
       <div className="absolute top-[58px] left-[30px] flex w-[400px] items-center justify-between">
         <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">Collect Payment</p>
         <CloseIcon size={42} onClick={onClose} />
@@ -32,19 +39,60 @@ export function CollectPaymentSheet({
         </div>
       </div>
 
-      <div className="absolute top-[238px] left-[30px] flex w-[400px] flex-col gap-3">
-        <div className="flex h-9 w-[219px] flex-col gap-1.5 text-sm leading-none">
-          <p className="w-full font-semibold text-[#f0f2f7]">Offline</p>
-          <p className="w-full text-[#888c98]">Collect payment manually</p>
+      <div className="absolute top-[238px] left-[30px] flex w-[400px] flex-col gap-5">
+        <div className="flex w-full flex-col gap-3">
+          <div className="flex h-9 w-[219px] flex-col gap-1.5 text-sm leading-none">
+            <p className="w-full font-semibold text-[#f0f2f7]">Online</p>
+            <p className="w-full text-[#888c98]">Credit / Debit Card, NFC, QR Code</p>
+          </div>
+          <button
+            type="button"
+            onClick={onSmartPay}
+            className="flex h-[54px] w-full items-center justify-between rounded-2xl border border-[rgba(255,106,0,0.6)] bg-[#8f4f20] px-[17px] py-px transition hover:brightness-125"
+          >
+            <span className="flex items-center gap-3">
+              <span className="flex size-5 items-end justify-center rounded-[4.762px] bg-[#ff6a00] px-[3px]">
+                <Image src={`${ASSET}/smartpay.svg`} alt="" width={14} height={12.5} className="h-[12.5px] w-[14px]" />
+              </span>
+              <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#f0f2f7]">SmartPay Terminal</span>
+            </span>
+            <span className="flex h-5 w-[94px] items-center gap-0.5">
+              <span className="flex h-5 w-[30px] items-center justify-center rounded-[3px] bg-white px-[1.5px]">
+                <Image src={`${ASSET}/visa.svg`} alt="Visa" width={27} height={8} className="h-2 w-[27px]" />
+              </span>
+              <span className="flex h-5 w-[30px] items-center justify-center rounded-[3px] bg-white px-0.5">
+                <Image src={`${ASSET}/mastercard.svg`} alt="Mastercard" width={26} height={18} className="h-[18px] w-[26px]" />
+              </span>
+              <span className="flex h-5 min-w-px flex-1 items-center justify-center rounded-[3px] bg-white px-1">
+                <Image src={`${ASSET}/amex.png`} alt="American Express" width={22} height={16} className="h-4 w-[22px] rounded-[4px] object-cover" />
+              </span>
+            </span>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onCash}
-          className="flex h-[54px] w-full items-center gap-3 rounded-2xl border border-[#6e5e41] bg-[#1b1b1b] p-[17px] transition hover:brightness-125"
-        >
-          <Image src={`${ASSET}/cash.svg`} alt="" width={20} height={20} className="size-5" />
-          <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#e8bc6b]">Cash</span>
-        </button>
+
+        <div className="flex w-full flex-col gap-3">
+          <div className="flex h-9 w-[219px] flex-col gap-1.5 text-sm leading-none">
+            <p className="w-full font-semibold text-[#f0f2f7]">Offline</p>
+            <p className="w-full text-[#888c98]">Collect payment manually</p>
+          </div>
+          <div className="flex w-full flex-col gap-2">
+            <button
+              type="button"
+              onClick={onCash}
+              className="flex h-[54px] w-full items-center gap-3 rounded-2xl border border-[#6e5e41] bg-[#1b1b1b] p-[17px] transition hover:brightness-125"
+            >
+              <Image src={`${ASSET}/cash.svg`} alt="" width={20} height={20} className="size-5" />
+              <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#e8bc6b]">Cash</span>
+            </button>
+            <button
+              type="button"
+              className="flex h-[54px] w-full items-center gap-3 rounded-2xl border border-[#6e5e41] bg-[#1b1b1b] p-[17px] transition hover:brightness-125"
+            >
+              <Image src={`${ASSET}/collect-manual.svg`} alt="" width={20} height={20} className="size-5" />
+              <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#e8bc6b]">Collect manual</span>
+            </button>
+          </div>
+        </div>
       </div>
     </Sheet>
   );
@@ -147,18 +195,22 @@ export function PaymentConfirmedSheet({
   total,
   tendered,
   onClose,
+  method = "Cash",
+  backLabel = "Back to Tables",
 }: {
   total: number;
   tendered: number;
   onClose: () => void;
+  /** "Card" is the SmartPay terminal (Figma 3148:14923): same receipt, a card line instead of cash. */
+  method?: "Cash" | "Card";
+  backLabel?: string;
 }) {
   const change = Math.max(0, Math.round((tendered - total) * 100) / 100);
 
   return (
-    <Sheet width={460} height={430} onClose={onClose}>
+    <Sheet width={460} height={430}>
       <div className="absolute top-[58px] left-[30px] flex w-[400px] items-center justify-between">
         <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">Payment Confirmed</p>
-        <CloseIcon size={42} onClick={onClose} />
       </div>
 
       <div className="absolute top-[130px] left-[30px] flex h-[190px] w-[400px] flex-col">
@@ -169,7 +221,7 @@ export function PaymentConfirmedSheet({
               <p>{currency(total)}</p>
             </div>
             <div className="flex w-full items-center justify-between text-sm leading-none whitespace-nowrap text-[#cdcdcd]">
-              <p>Cash payment</p>
+              <p>{method === "Card" ? "Debit/credit payment" : "Cash payment"}</p>
               <p>{currency(tendered)}</p>
             </div>
             <div className="relative h-0 w-full">
@@ -199,8 +251,49 @@ export function PaymentConfirmedSheet({
           onClick={onClose}
           className="flex h-[46px] min-w-px flex-1 items-center justify-center rounded-2xl bg-[#433a31] px-5 py-2.5 transition hover:brightness-125"
         >
-          <span className="text-sm leading-none whitespace-nowrap text-[#fcdfa2]">Back to Tables</span>
+          <span className="text-sm leading-none whitespace-nowrap text-[#fcdfa2]">{backLabel}</span>
         </button>
+      </div>
+    </Sheet>
+  );
+}
+
+/** The terminal answers after about this long; the sheet counts the wait down from it. */
+const STATUS_CHECK_SECONDS = 9;
+
+/**
+ * Figma 3148:14871: the waiter's tablet while the customer taps their card on the SmartPay terminal.
+ * The sheet is swapped for Payment Confirmed once the terminal reaches its confirmation screen.
+ */
+export function CompletePaymentSheet({ onClose }: { onClose: () => void }) {
+  const [left, setLeft] = useState(STATUS_CHECK_SECONDS);
+  useEffect(() => {
+    const id = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <Sheet width={460} height={683} onClose={onClose}>
+      <div className="absolute top-[58px] left-[30px] flex w-[400px] items-center justify-between">
+        <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">Complete Payment</p>
+        <CloseIcon size={42} onClick={onClose} />
+      </div>
+
+      <div className="absolute top-[140px] left-[30px] h-[320px] w-[400px] overflow-hidden rounded-[40px] bg-[#2f2d2b]">
+        <Image src={`${ASSET}/terminal-illustration.png`} alt="SmartPay terminal waiting for a card" width={400} height={320} className="size-full" />
+      </div>
+
+      <p className="absolute top-[492px] left-1/2 w-[328px] -translate-x-1/2 text-center text-xl leading-[1.2] font-semibold text-[#f0f2f7]">
+        Complete payment using SmartPay terminal device
+      </p>
+      <p className="absolute top-[556px] left-1/2 -translate-x-1/2 text-center text-sm leading-[1.2] whitespace-nowrap text-[#888c98]">
+        Please tap, insert or swap card on terminal device
+      </p>
+
+      <div className="absolute top-[613px] left-[30px] flex w-[400px] items-start">
+        <div className="flex min-w-px flex-1 items-center justify-center rounded-2xl bg-[#2f2d2b] p-4">
+          <p className="text-sm leading-none whitespace-nowrap text-white/40">Checking Payment Status ({left}s)</p>
+        </div>
       </div>
     </Sheet>
   );

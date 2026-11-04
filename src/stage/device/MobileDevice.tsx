@@ -5,11 +5,29 @@ import { registryFor } from "@/config/phases/screens";
 import { useSim } from "@/engine/store";
 import { useThemeConfig } from "@/theme/hooks";
 import { mobileCssVars } from "@/theme/tokens";
+import { TerminalIdleScreen } from "@/screens/terminal/TerminalIdleScreen";
+import {
+  TerminalDoneScreen,
+  TerminalProcessingScreen,
+  TerminalSuccessScreen,
+  TerminalTapCardScreen,
+} from "@/screens/terminal/TerminalPaymentScreens";
 import { DeviceFrame } from "./DeviceFrame";
 import { SignalLayer } from "./SignalLayer";
 
+const TERMINAL_SCREENS = {
+  idle: TerminalIdleScreen,
+  processing: TerminalProcessingScreen,
+  "tap-card": TerminalTapCardScreen,
+  done: TerminalDoneScreen,
+  success: TerminalSuccessScreen,
+};
+
 export function MobileDevice() {
   const phase = useSim((s) => s.phase);
+  const terminal = useSim((s) => s.paymentMode) === "terminal";
+  const terminalScreen = useSim((s) => s.terminal.screen);
+  const TerminalScreen = TERMINAL_SCREENS[terminalScreen];
   const screen = useSim((s) => s.screens.mobile);
   const cartCount = useSim((s) => s.customer.cart.reduce((n, l) => n + l.qty, 0));
   const theme = useThemeConfig();
@@ -17,17 +35,23 @@ export function MobileDevice() {
 
   return (
     <DeviceFrame
-      spec={DEVICES.mobile}
+      spec={terminal ? DEVICES.terminal : DEVICES.mobile}
       style={mobileCssVars(theme.mobile.tokens)}
       badge={
         <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-300">
-          {screen}
-          {cartCount ? ` · cart ${cartCount}` : ""}
+          {terminal ? terminalScreen : screen}
+          {!terminal && cartCount ? ` · cart ${cartCount}` : ""}
         </span>
       }
     >
-      <SignalLayer device="mobile" />
-      <Screen />
+      {terminal ? (
+        <TerminalScreen />
+      ) : (
+        <>
+          <SignalLayer device="mobile" />
+          <Screen />
+        </>
+      )}
     </DeviceFrame>
   );
 }
