@@ -72,7 +72,7 @@ export function OrderPlacedScreen() {
       <div className="relative flex-1 overflow-x-clip overflow-y-auto">
         {/* white-to-transparent wash behind the message, then the green wave */}
         <div className="pointer-events-none absolute top-0 left-0 h-[406px] w-full bg-gradient-to-b from-white from-[31.752%] to-white/0" />
-        <div className="pointer-events-none absolute top-[162px] left-1/2 h-[200px] w-[375px] -translate-x-1/2">
+        <div className="pointer-events-none absolute top-[162px] left-1/2 h-[200px] w-full -translate-x-1/2">
           <Image src={`${ASSET}/wave-bg.svg`} alt="" fill className="object-fill" />
         </div>
 

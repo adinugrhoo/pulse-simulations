@@ -17,11 +17,13 @@ export function ScanToOrderSheet({
   minutesLeft,
   onClose,
   onAddGuest,
+  onPrint,
 }: {
   table: Table;
   minutesLeft: number;
   onClose: () => void;
   onAddGuest: () => void;
+  onPrint: () => void;
 }) {
   return (
     <Sheet width={460} height={731} onClose={onClose}>
@@ -58,7 +60,7 @@ export function ScanToOrderSheet({
         <Image src={`${ASSET}/add-guest.svg`} alt="" width={14} height={14} className="size-[14px]" />
         <span className="text-sm leading-none font-bold whitespace-nowrap text-[#e8bc6b]">Add Guest</span>
       </button>
-      <button type="button" className={`${ghostButton} top-[655px]`}>
+      <button type="button" onClick={onPrint} className={`${ghostButton} top-[655px]`}>
         <Image src={`${ASSET}/printer-gold.svg`} alt="" width={14} height={14} className="size-[14px]" />
         <span className="text-sm leading-none font-bold whitespace-nowrap text-[#e8bc6b]">Print QR Order</span>
       </button>

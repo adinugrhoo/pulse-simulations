@@ -40,6 +40,7 @@ export type SimEvent =
   | { type: "waiter/set-order-status"; orderId: string; status: OrderStatus }
   | { type: "waiter/settle-bill"; tableId: string; amount: number; method?: string; tendered?: number }
   | { type: "waiter/close-table"; tableId: string }
+  | { type: "waiter/print-qr"; tableId: string }
   | { type: "waiter/open-table"; tableId: string; guests: number; guestName: string; phone: string }
   /* simulation control */
   | { type: "sim/navigate"; mobile?: MobileScreenId; tablet?: TabletScreenId }

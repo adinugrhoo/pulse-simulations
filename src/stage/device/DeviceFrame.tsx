@@ -25,17 +25,28 @@ export function DeviceFrame({
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
+  /** Logical width of the screen. Grows past the authored width to fill a wide host. */
+  const [screenW, setScreenW] = useState(spec.width);
 
   const skin = spec.skin;
-  const outerW = skin ? skin.width : spec.width + spec.bezel * 2;
+  const outerW = skin ? skin.width : screenW + spec.bezel * 2;
   const outerH = skin ? skin.height : spec.height + spec.bezel * 2;
   /** Screens keep their authored size and scale, letterboxed, into the photo's display. */
-  const screenScale = skin ? Math.min(skin.screen.width / spec.width, skin.screen.height / spec.height) : 1;
+  const screenScale = skin ? skin.screen.height / spec.height : 1;
+  /** Skinned screens keep their height and stretch in width to fill the display. */
+  const skinScreenW = skin ? skin.screen.width / screenScale : spec.width;
 
   useLayoutEffect(() => {
     const el = hostRef.current;
     if (!el) return;
-    const fit = (w: number, h: number) => setScale(Math.min(w / outerW, h / outerH, 1));
+    const fit = (w: number, h: number) => {
+      if (skin) return setScale(Math.min(w / skin.width, h / skin.height, 1));
+      // scale by height, then stretch the screen's width so the UI fills the host
+      const minW = spec.width + spec.bezel * 2;
+      const next = Math.min(h / outerH, w / minW, 1);
+      setScale(next);
+      setScreenW(Math.max(spec.width, Math.round(w / next - spec.bezel * 2)));
+    };
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       fit(width, height);
@@ -43,7 +54,7 @@ export function DeviceFrame({
     ro.observe(el);
     fit(el.clientWidth, el.clientHeight);
     return () => ro.disconnect();
-  }, [outerW, outerH]);
+  }, [skin, spec.width, spec.bezel, outerH]);
 
   return (
     <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col gap-2", className)}>
@@ -79,7 +90,7 @@ export function DeviceFrame({
                   className="relative shrink-0 overflow-hidden bg-white"
                   style={{
                     ...style,
-                    width: spec.width,
+                    width: skinScreenW,
                     height: spec.height,
                     transform: `scale(${screenScale})`,
                   }}
@@ -103,7 +114,7 @@ export function DeviceFrame({
               className="relative overflow-hidden bg-white"
               style={{
                 ...style,
-                width: spec.width,
+                width: screenW,
                 height: spec.height,
                 borderRadius: Math.max(spec.radius - spec.bezel, 4),
               }}

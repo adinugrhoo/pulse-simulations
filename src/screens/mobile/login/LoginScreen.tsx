@@ -39,7 +39,7 @@ export function LoginScreen() {
           className="object-cover blur-[10px]"
         />
       </div>
-      <div className="absolute top-[161px] left-0 h-[210px] w-[375px] overflow-hidden">
+      <div className="absolute top-[161px] left-0 h-[210px] w-full overflow-hidden">
         <Image src="/figma/mobile-login/bg.gif" alt="" fill unoptimized className="object-cover" />
       </div>
 
@@ -68,7 +68,7 @@ export function LoginScreen() {
       </div>
 
       {/* bottom sheet */}
-      <div className="absolute top-[576px] left-0 flex w-[375px] flex-col items-center rounded-t-3xl bg-white px-4 pt-4 pb-6 drop-shadow-[0px_-2px_24px_rgba(0,0,0,0.1)]">
+      <div className="absolute top-[576px] left-0 flex w-full flex-col items-center rounded-t-3xl bg-white px-4 pt-4 pb-6 drop-shadow-[0px_-2px_24px_rgba(0,0,0,0.1)]">
         <div className="flex w-full flex-col items-end gap-4">
           <div className="flex w-full flex-col items-start gap-4">
             <div
@@ -171,7 +171,7 @@ export function LoginScreen() {
       </div>
 
       {/* device chrome */}
-      <div className="absolute bottom-0 left-0 flex w-[375px] flex-col items-center border-t-[0.5px] border-black/[0.14] bg-white/80 pt-2.5 backdrop-blur-[10px]">
+      <div className="absolute bottom-0 left-0 flex w-full flex-col items-center border-t-[0.5px] border-black/[0.14] bg-white/80 pt-2.5 backdrop-blur-[10px]">
         <div className="mb-[-8px] flex items-center gap-1.5">
           <Image src="/figma/mobile-login/lock.svg" alt="" width={6} height={9} />
           <span className="text-xs leading-4 text-black">smartweb.com/ts-cafe</span>

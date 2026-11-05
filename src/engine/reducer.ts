@@ -44,6 +44,12 @@ const signal = (draft: SimState, s: Omit<Signal, "id" | "tick">) => {
   draft.signals = draft.signals.slice(0, 12);
 };
 
+/** Tablet toast plus the printing overlay for a table's QR receipt. */
+const printQr = (draft: SimState, table: Table, toast: string) => {
+  signal(draft, { device: "tablet", kind: "alert", variant: "table-open", title: table.label, body: toast });
+  draft.qrPrint = { id: `print-${draft.tick}`, tableLabel: table.label, guests: table.guests };
+};
+
 /**
  * Pure domain transition. Navigation lives in triggers.ts so the "customer does X,
  * tablet shows Y" wiring stays editable in one file.
@@ -416,6 +422,14 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         // straight into the order detail, which starts with no orders
         draft.waiter.selectedTableId = event.tableId;
         draft.waiter.openTableId = event.tableId;
+        // dynamic QR in phase 2: the waiter is nudged to print the table's QR
+        if (draft.qrType === "dynamic" && draft.phase === "2.0") printQr(draft, table, "Open & Print QR table");
+        break;
+      }
+
+      case "waiter/print-qr": {
+        const table = tableOf(draft, event.tableId);
+        if (table) printQr(draft, table, "Printing QR table");
         break;
       }
 

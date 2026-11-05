@@ -16,11 +16,20 @@ export type LogEntry = {
 /** What the Adyen terminal shows in payment mode "terminal": idle keypad, then the SmartPay card flow. */
 export type TerminalScreen = "idle" | "processing" | "tap-card" | "done" | "success";
 
+/** QR wallets the terminal offers next to the card reader. */
+export type TerminalQrOption = "grabpay" | "paynow" | "wechat";
+
 export type TerminalState = {
   screen: TerminalScreen;
   /** The table being charged and the amount due on it, set when the waiter picks SmartPay Terminal. */
   tableId?: string;
   amount?: number;
+  /** What settles on the table once the payment goes through (the whole bill, not just the balance). */
+  settleAmount?: number;
+  /** The "Select QR Code" sheet is open over the card reader. */
+  qrMenu?: boolean;
+  /** The wallet picked from that sheet: the terminal shows its QR instead of waiting for a card. */
+  qrOption?: TerminalQrOption;
   /** Bumped on every new payment so a stale timer from an earlier run never moves the screen. */
   run: number;
   paidAt?: string;
@@ -42,6 +51,8 @@ export type SimState = {
   waiter: WaiterSession;
   screens: { mobile: MobileScreenId; tablet: TabletScreenId };
   signals: Signal[];
+  /** The open-table QR receipt being printed on the tablet; cleared once the overlay is done. */
+  qrPrint?: { id: string; tableLabel: string; guests?: number };
   terminal: TerminalState;
   log: LogEntry[];
   stepIndex: number;
@@ -65,6 +76,7 @@ export const initialState = (
     waiter: { cart: [] },
     screens: { mobile: "login", tablet: "tables" },
     signals: [],
+    qrPrint: undefined,
     terminal: { screen: "idle", run: 0 },
     log: [],
     stepIndex: -1,

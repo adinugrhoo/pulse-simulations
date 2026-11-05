@@ -202,7 +202,7 @@ export function PaymentConfirmedSheet({
   tendered: number;
   onClose: () => void;
   /** "Card" is the SmartPay terminal (Figma 3148:14923): same receipt, a card line instead of cash. */
-  method?: "Cash" | "Card";
+  method?: "Cash" | "Card" | "QR";
   backLabel?: string;
 }) {
   const change = Math.max(0, Math.round((tendered - total) * 100) / 100);
@@ -221,7 +221,7 @@ export function PaymentConfirmedSheet({
               <p>{currency(total)}</p>
             </div>
             <div className="flex w-full items-center justify-between text-sm leading-none whitespace-nowrap text-[#cdcdcd]">
-              <p>{method === "Card" ? "Debit/credit payment" : "Cash payment"}</p>
+              <p>{method === "Card" ? "Debit/credit payment" : method === "QR" ? "QR payment" : "Cash payment"}</p>
               <p>{currency(tendered)}</p>
             </div>
             <div className="relative h-0 w-full">

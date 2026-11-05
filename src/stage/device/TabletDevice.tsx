@@ -5,6 +5,7 @@ import { registryFor } from "@/config/phases/screens";
 import { useSim } from "@/engine/store";
 import { useThemeId } from "@/theme/hooks";
 import { DeviceFrame } from "./DeviceFrame";
+import { QrPrintOverlay } from "./QrPrintOverlay";
 import { SignalLayer } from "./SignalLayer";
 
 export function TabletDevice() {
@@ -25,6 +26,7 @@ export function TabletDevice() {
       }
     >
       <SignalLayer device="tablet" />
+      <QrPrintOverlay />
       <Screen />
     </DeviceFrame>
   );
