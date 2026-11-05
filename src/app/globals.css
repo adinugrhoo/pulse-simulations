@@ -255,3 +255,140 @@ body {
 .animate-reader-dot {
   animation: reader-dot-pulse 1.2s ease-in-out infinite;
 }
+
+/* table-open toast: slides in from the right edge, holds 3s, slides back out (0.6s + 3s + 0.6s) */
+@keyframes toast-slide {
+  0% {
+    transform: translateX(calc(100% + 24px));
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  14.285% {
+    transform: translateX(0);
+  }
+  85.715% {
+    transform: translateX(0);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
+.animate-toast-slide {
+  animation: toast-slide 4.2s both;
+}
+
+/* open-table QR receipt (after ultramathi/receipt): dark printer, paper fed out in steps */
+.receipt-printer {
+  background: linear-gradient(180deg, #262625 0%, #1d1d1c 55%, #171716 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 24px 48px rgba(15, 14, 10, 0.28),
+    0 4px 12px rgba(15, 14, 10, 0.18);
+  animation: receipt-hum 0.14s linear 33;
+}
+
+.receipt-slot {
+  background: #080807;
+  box-shadow:
+    inset 0 3px 6px rgba(0, 0, 0, 0.9),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* shadow the slot lip casts onto the emerging paper */
+.receipt-window::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 30px;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.16) 45%, transparent);
+  pointer-events: none;
+}
+
+@keyframes receipt-hum {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(0.5px);
+  }
+}
+
+@keyframes receipt-feed {
+  0% { transform: translateY(-102%); }
+  11% { transform: translateY(-87%); }
+  17% { transform: translateY(-85%); }
+  30% { transform: translateY(-66%); }
+  36% { transform: translateY(-64%); }
+  50% { transform: translateY(-43%); }
+  56% { transform: translateY(-41%); }
+  70% { transform: translateY(-21%); }
+  76% { transform: translateY(-19%); }
+  90% { transform: translateY(-4%); }
+  94% { transform: translateY(-2%); }
+  100% { transform: translateY(0); }
+}
+
+/* fades in with the print and lifts away for the last 0.4s of the hold */
+@keyframes receipt-backdrop {
+  0% { opacity: 0; }
+  5% { opacity: 1; }
+  93% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-receipt-feed {
+  animation: receipt-feed 4.6s cubic-bezier(0.25, 0.6, 0.3, 1) both;
+}
+
+.animate-receipt-backdrop {
+  animation: receipt-backdrop 6.2s linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-receipt-feed,
+  .receipt-printer {
+    animation: none;
+  }
+}
+
+/* terminal "Select QR Code": the sheet grows out of the QR button's circle (centre 50,750) */
+@keyframes terminal-fab-expand {
+  from {
+    clip-path: circle(30px at 50px 750px);
+  }
+  to {
+    clip-path: circle(900px at 50px 750px);
+  }
+}
+
+@keyframes terminal-fab-content {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-terminal-fab-expand {
+  animation: terminal-fab-expand 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-terminal-fab-collapse {
+  animation: terminal-fab-expand 0.35s cubic-bezier(0.4, 0, 0.2, 1) reverse both;
+}
+
+.animate-terminal-fab-content {
+  animation: terminal-fab-content 0.4s 0.2s ease-out both;
+}
+
+.animate-terminal-fab-fade-out {
+  animation: terminal-fab-content 0.2s ease-in reverse both;
+}

@@ -1,14 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import type { CSSProperties } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/cn";
-import { figtree, roboto } from "@/lib/fonts";
-import { useSim } from "@/engine/store";
+import { figtree, rubik } from "@/lib/fonts";
+import { TERMINAL_QR_LABEL, useSim } from "@/engine/store";
+import type { TerminalQrOption } from "@/engine/state";
+import { currency } from "@/engine/types";
+import {
+  Approved,
+  PresentCard,
+} from "@/screens/tablet/sheets/SameDevicePayment";
+import { QrCodeSvg } from "@/stage/device/QrCodeSvg";
 
 const ASSET = "/figma/terminal";
-
-const money = (amount = 0) => amount.toFixed(2);
 
 /** Figma 5342:7318: the request leaves the terminal. Holds a second before the card reader opens. */
 export function TerminalProcessingScreen() {
@@ -33,140 +38,204 @@ export function TerminalProcessingScreen() {
   );
 }
 
-function CardLogos() {
-  return (
-    <div className="flex items-center gap-3">
-      <Image
-        src={`${ASSET}/visa.svg`}
-        alt="Visa"
-        width={47}
-        height={14}
-        className="h-[14px] w-[47px]"
-      />
-      <Image
-        src={`${ASSET}/mastercard.svg`}
-        alt="Mastercard"
-        width={31}
-        height={22}
-        className="h-[22px] w-[31px]"
-      />
-      <Image
-        src={`${ASSET}/amex.png`}
-        alt="American Express"
-        width={27}
-        height={20}
-        className="h-5 w-[27px] rounded object-cover"
-      />
-    </div>
-  );
-}
+const amountLabel = (amount = 0) => currency(amount).replace(/^SGD/, "SGD ");
 
-/** Figma 4292:10244: the card reader, waiting for a tap. */
-export function TerminalTapCardScreen() {
-  const amount = useSim((s) => s.terminal.amount);
+/** One logo box per wallet: the images sit centred in a 46x30.7 white chip, as in Figma 5359:7550. */
+function WalletLogo({
+  option,
+  className,
+}: {
+  option: TerminalQrOption;
+  className?: string;
+}) {
   return (
-    <div
-      className={cn(
-        roboto.className,
-        "relative size-full bg-white text-[#24242e]",
-      )}
-    >
-      <div className="absolute top-[201px] left-[calc(50%+17px)] h-[143px] w-[230px] -translate-x-1/2">
+    <div className={cn("relative overflow-hidden bg-white", className)}>
+      {option === "grabpay" ? (
         <Image
-          src={`${ASSET}/tap-card.png`}
-          alt=""
-          fill
-          className="object-cover"
+          src={`${ASSET}/qr-grabpay.png`}
+          alt="GrabPay"
+          width={300}
+          height={260}
+          className="absolute top-[10%] left-1/2 h-[80%] w-[63.3%] -translate-x-[48%] object-cover"
         />
-      </div>
-      <p className="absolute top-[389px] left-1/2 -translate-x-1/2 -translate-y-1/2 text-lg leading-6 whitespace-nowrap">
-        Please tap the card
-      </p>
-      <p className="absolute top-[648px] left-1/2 -translate-x-1/2 -translate-y-1/2 text-lg leading-6 font-medium whitespace-nowrap">
-        Total
-      </p>
-      <p className="absolute top-[688px] left-1/2 -translate-x-1/2 -translate-y-1/2 text-[42px] leading-[56px] font-bold tracking-[-1px] whitespace-nowrap">
-        SGD{money(amount)}
-      </p>
-      <div className="absolute top-[728px] left-1/2 -translate-x-1/2">
-        <CardLogos />
-      </div>
+      ) : option === "paynow" ? (
+        <Image
+          src={`${ASSET}/qr-paynow.png`}
+          alt="PayNow"
+          width={211}
+          height={133}
+          className="absolute top-1/2 left-1/2 h-[65%] w-[70%] -translate-x-[48%] -translate-y-1/2 object-cover"
+        />
+      ) : (
+        <div className="absolute top-1/2 left-1/2 h-[70%] w-[53.3%] -translate-x-1/2 -translate-y-1/2 overflow-hidden">
+          <Image
+            src={`${ASSET}/qr-wechat.png`}
+            alt="WeChat Pay"
+            width={800}
+            height={245}
+            className="absolute top-0 left-0 h-full w-[285.71%] max-w-none"
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-/** Bits of confetti thrown out of the disc as the check lands: direction and colour per piece. */
-const CONFETTI = [
-  { dx: -120, dy: -70, c: "#ffffff", s: 8 },
-  { dx: 118, dy: -64, c: "#fff3a6", s: 7 },
-  { dx: -96, dy: 92, c: "#b8ffd2", s: 6 },
-  { dx: 104, dy: 88, c: "#ffffff", s: 9 },
-  { dx: -10, dy: -132, c: "#fff3a6", s: 6 },
-  { dx: 6, dy: 130, c: "#b8ffd2", s: 8 },
-  { dx: -138, dy: 12, c: "#b8ffd2", s: 7 },
-  { dx: 136, dy: 4, c: "#fff3a6", s: 6 },
+const QR_OPTIONS: { id: TerminalQrOption; label: string }[] = [
+  { id: "grabpay", label: "GrabPay" },
+  { id: "paynow", label: "PayNow" },
+  { id: "wechat", label: "WeChat Pay" },
 ];
 
 /**
- * Figma 4292:10286, animated: green floods out from the disc, the white disc springs in, the green
- * badge pops and its check draws itself, rings ripple and confetti flies, then Done and the amount rise.
+ * Figma 5359:7550: the QR button grows into the "Select QR Code" sheet. The dark page expands out of
+ * the button's circle, then the options rise in; Cancel shrinks it back.
  */
-export function TerminalDoneScreen() {
-  const amount = useSim((s) => s.terminal.amount);
+function QrMenu({
+  onPick,
+  onCancel,
+}: {
+  onPick: (option: TerminalQrOption) => void;
+  onCancel: () => void;
+}) {
+  const [closing, setClosing] = useState(false);
+  const cancel = () => {
+    setClosing(true);
+    setTimeout(onCancel, 350);
+  };
+
   return (
     <div
       className={cn(
-        roboto.className,
-        "relative size-full overflow-hidden bg-white",
+        figtree.className,
+        "absolute inset-0 z-20 bg-[#0e1a34]",
+        closing
+          ? "animate-terminal-fab-collapse"
+          : "animate-terminal-fab-expand",
       )}
     >
-      <div className="animate-terminal-done-flood absolute inset-0 bg-[#00c145]" />
-
-      <div className="absolute top-[94px] left-1/2 size-[200px] -translate-x-1/2">
-        <div className="animate-terminal-done-ring absolute inset-0 rounded-full border-4 border-white/70" />
-        <div className="animate-terminal-done-ring absolute inset-0 rounded-full border-4 border-white/50 [animation-delay:1.2s]" />
-        <div className="animate-terminal-done-disc absolute inset-0 rounded-full bg-white" />
-        {CONFETTI.map((p, i) => (
-          <span
-            key={i}
-            className="animate-terminal-done-confetti absolute top-1/2 left-1/2 rounded-full"
-            style={
-              {
-                width: p.s,
-                height: p.s,
-                marginTop: -p.s / 2,
-                marginLeft: -p.s / 2,
-                background: p.c,
-                "--dx": `${p.dx}px`,
-                "--dy": `${p.dy}px`,
-              } as CSSProperties
-            }
-          />
-        ))}
-        <div className="absolute top-[76px] left-[79px] size-[48px] p-1">
-          <svg
-            viewBox="0 0 40 40"
-            className="animate-terminal-done-badge size-10"
-            aria-hidden
+      <div
+        className={cn(
+          "absolute inset-x-0 top-[516px] flex justify-center",
+          closing
+            ? "animate-terminal-fab-fade-out"
+            : "animate-terminal-fab-content",
+        )}
+      >
+        <div className="flex flex-col gap-3">
+          <p
+            className={cn(
+              rubik.className,
+              "text-2xl leading-none font-medium whitespace-nowrap text-white",
+            )}
           >
-            <circle cx="20" cy="20" r="20" fill="#00c145" />
-            <path
-              d="M12 20.5l5.5 5.5L28.5 15"
-              fill="none"
-              stroke="#fff"
-              strokeWidth={3.2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="animate-terminal-done-check"
-            />
-          </svg>
+            Select QR Code
+          </p>
+          {QR_OPTIONS.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => onPick(o.id)}
+              className="relative flex h-12 w-[328px] items-center justify-center rounded-xl bg-white px-2.5 py-3.5 text-[15px] leading-6 font-bold text-[#24242e]"
+            >
+              <WalletLogo
+                option={o.id}
+                className="absolute top-[8.67px] left-4 h-[30.667px] w-[46px] rounded-[4.6px]"
+              />
+              {o.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={cancel}
+            className="flex h-12 w-[328px] items-center justify-center rounded-xl bg-white/20 text-[15px] leading-6 font-bold text-white"
+          >
+            Cancel
+          </button>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="animate-terminal-done-rise absolute top-[332px] left-0 flex w-[360px] flex-col items-center text-white">
-        <p className="text-lg leading-6 font-semibold">Done</p>
-        <p className="text-lg leading-6">SGD{money(amount)}</p>
+/** Figma 5359:7616: a wallet's QR for the customer to scan, with that wallet's logo in the middle. */
+function QrPayment({
+  option,
+  amount,
+}: {
+  option: TerminalQrOption;
+  amount?: number;
+}) {
+  return (
+    <div className={cn(rubik.className, "absolute inset-0 bg-[#0e1a34]")}>
+      <div className="absolute top-10 left-5 flex gap-2">
+        <Image
+          src="/figma/tablet-payment/same-device/dot-active.svg"
+          alt=""
+          width={16}
+          height={16}
+          className="animate-reader-dot size-4"
+        />
+        {[0, 1, 2].map((i) => (
+          <Image
+            key={i}
+            src="/figma/tablet-payment/same-device/dot.svg"
+            alt=""
+            width={16}
+            height={16}
+            className="size-4"
+          />
+        ))}
       </div>
+      <p className="absolute top-[104px] left-5 -translate-y-1/2 text-5xl leading-[56px] font-medium tracking-[-1px] whitespace-nowrap text-[#d8e2ea]">
+        {amountLabel(amount)}
+      </p>
+      <p className="absolute top-[159px] left-5 -translate-y-1/2 text-2xl leading-none font-light tracking-[-1px] whitespace-nowrap text-[#dae7fc]">
+        Total amount
+      </p>
+      <div className="animate-terminal-fab-content absolute top-[306px] left-1/2 size-[188px] -translate-x-1/2 rounded-[20px] bg-white">
+        <QrCodeSvg
+          seed={`${option}-${amount}`}
+          size={140}
+          fg="#000"
+          clearCenter
+          className="absolute top-6 left-6"
+        />
+        <div className="absolute top-[67px] left-[67px] size-[54px] rounded-[6.5px] bg-white" />
+        <WalletLogo
+          option={option}
+          className="absolute top-[74px] left-[73px] h-7 w-[42px] rounded-[4px]"
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Figma 5342:5391: the terminal waits for a card, with the QR button in the corner. The button opens
+ * the wallet sheet; picking a wallet swaps the reader for that wallet's QR.
+ */
+export function TerminalTapCardScreen() {
+  const terminal = useSim((s) => s.terminal);
+  const open = useSim((s) => s.openTerminalQrMenu);
+  const close = useSim((s) => s.closeTerminalQrMenu);
+  const choose = useSim((s) => s.chooseTerminalQr);
+
+  if (terminal.qrOption)
+    return <QrPayment option={terminal.qrOption} amount={terminal.amount} />;
+  return (
+    <div className="relative size-full">
+      <PresentCard amount={terminal.amount ?? 0} onQr={open} />
+      {terminal.qrMenu ? <QrMenu onPick={choose} onCancel={close} /> : null}
+    </div>
+  );
+}
+
+/** Figma 5342:5415: same Approved page and animation as same-device payment, held until the keypad returns. */
+export function TerminalApprovedScreen() {
+  return (
+    <div className="relative size-full">
+      <Approved />
     </div>
   );
 }
@@ -178,7 +247,7 @@ export function TerminalDoneScreen() {
 export function TerminalSuccessScreen() {
   const terminal = useSim((s) => s.terminal);
   const setScreen = useSim((s) => s.setTerminalScreen);
-  const amount = money(terminal.amount);
+  const amount = (terminal.amount ?? 0).toFixed(2);
   const [date, time] = (terminal.paidAt ?? "").split(" • ");
 
   return (
@@ -189,13 +258,13 @@ export function TerminalSuccessScreen() {
       )}
     >
       <div className="absolute inset-0 overflow-y-auto">
-        <div className="relative h-[960px] w-[360px]">
-          <div className="absolute top-16 left-0 h-[300px] w-[360px] bg-white" />
+        <div className="relative h-[960px] w-full">
+          <div className="absolute top-16 left-0 h-[300px] w-full bg-white" />
           <div className="absolute top-[252px] right-0 left-0 h-40">
             <Image src={`${ASSET}/success-wave.svg`} alt="" fill />
           </div>
 
-          <div className="absolute top-20 left-4 flex w-[328px] flex-col items-center gap-[19px]">
+          <div className="absolute inset-x-0 top-20 mx-auto flex w-[328px] flex-col items-center gap-[19px]">
             <div className="relative size-[59px]">
               <Image
                 src={`${ASSET}/success.gif`}
@@ -217,7 +286,7 @@ export function TerminalSuccessScreen() {
             </div>
           </div>
 
-          <div className="absolute top-0 left-0 z-10 flex h-16 w-[360px] items-center justify-between bg-white px-4 py-2.5 drop-shadow-[0px_6px_10.5px_rgba(7,7,7,0.1)]">
+          <div className="absolute top-0 left-0 z-10 flex h-16 w-full items-center justify-between bg-white px-4 py-2.5 drop-shadow-[0px_6px_10.5px_rgba(7,7,7,0.1)]">
             <div className="flex flex-col items-start gap-1 whitespace-nowrap">
               <p className="text-lg leading-6 font-bold">
                 Payment Confirmation
@@ -235,7 +304,7 @@ export function TerminalSuccessScreen() {
             />
           </div>
 
-          <div className="absolute top-[284px] left-[9px] w-[343px]">
+          <div className="absolute inset-x-0 top-[284px] mx-auto w-[343px]">
             <div className="relative flex flex-col items-center gap-5 overflow-hidden rounded-[20px] bg-[#24242e] pb-6 shadow-[0px_4px_54px_-5px_rgba(7,7,7,0.15)]">
               <div className="absolute top-0 left-0 h-[253px] w-[343px] -scale-y-100">
                 <Image src={`${ASSET}/card-pattern.svg`} alt="" fill />
@@ -273,27 +342,36 @@ export function TerminalSuccessScreen() {
                     <p className="text-xs leading-5 text-[#7b7d8d]">
                       Payment By
                     </p>
-                    <div className="flex items-start gap-2">
-                      <div className="relative h-5 w-[30px] overflow-hidden rounded-[3px]">
-                        <Image
-                          src={`${ASSET}/card-mastercard.png`}
-                          alt="Mastercard"
-                          width={36}
-                          height={20}
-                          className="absolute top-[-0.82%] left-[-10.57%] h-[102.27%] w-[121.14%] max-w-none"
-                        />
+                    {terminal.qrOption ? (
+                      <div className="flex items-center gap-2">
+                        <WalletLogo option={terminal.qrOption} className="h-5 w-[30px] rounded-[3px]" />
+                        <p className="text-[15px] leading-6 font-semibold whitespace-nowrap text-[#dfdfe8]">
+                          {TERMINAL_QR_LABEL[terminal.qrOption]}
+                        </p>
                       </div>
-                      <p className="text-[15px] leading-6 font-semibold whitespace-nowrap text-[#dfdfe8]">
-                        ** 8568
-                      </p>
-                    </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        <div className="relative h-5 w-[30px] overflow-hidden rounded-[3px]">
+                          <Image
+                            src={`${ASSET}/card-mastercard.png`}
+                            alt="Mastercard"
+                            width={36}
+                            height={20}
+                            className="absolute top-[-0.82%] left-[-10.57%] h-[102.27%] w-[121.14%] max-w-none"
+                          />
+                        </div>
+                        <p className="text-[15px] leading-6 font-semibold whitespace-nowrap text-[#dfdfe8]">
+                          ** 8568
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="absolute top-[524px] left-4 flex w-[328px] flex-col items-center drop-shadow-[0px_6px_5.5px_rgba(7,7,7,0.13)]">
+          <div className="absolute inset-x-0 top-[524px] mx-auto flex w-[328px] flex-col items-center drop-shadow-[0px_6px_5.5px_rgba(7,7,7,0.13)]">
             <Image
               src={`${ASSET}/receipt-top.svg`}
               alt=""
@@ -380,7 +458,7 @@ export function TerminalSuccessScreen() {
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 z-10 flex w-[360px] flex-col items-center gap-4 bg-white px-4 pt-3 pb-4 drop-shadow-[0px_-4px_27px_rgba(7,7,7,0.15)]">
+      <div className="absolute bottom-0 left-0 z-10 flex w-full flex-col items-center gap-4 bg-white px-4 pt-3 pb-4 drop-shadow-[0px_-4px_27px_rgba(7,7,7,0.15)]">
         <button
           type="button"
           className="flex h-12 w-full items-center justify-center rounded-xl bg-[#ff6b00] text-[15px] leading-6 font-bold text-white"

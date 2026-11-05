@@ -44,10 +44,10 @@ export const DEVICES: Record<DeviceId, DeviceSpec> = {
     bezel: 0,
     radius: 0,
     skin: {
-      src: "/devices/adyen.png",
-      width: 542,
-      height: 1249,
-      screen: { x: 52, y: 391, width: 439, height: 790 },
+      src: "/devices/terminal.png",
+      width: 762,
+      height: 2042,
+      screen: { x: 58, y: 574, width: 636, height: 1280 },
     },
   },
 };

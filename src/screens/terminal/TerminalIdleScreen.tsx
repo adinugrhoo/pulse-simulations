@@ -39,7 +39,7 @@ export function TerminalIdleScreen() {
 
   return (
     <div className={cn(figtree.className, "relative size-full bg-white text-[#27364b]")}>
-      <div className="absolute top-0 left-0 z-10 flex h-16 w-[360px] items-center justify-between bg-white px-4 py-2.5 drop-shadow-[0px_6px_10.5px_rgba(7,7,7,0.1)]">
+      <div className="absolute top-0 left-0 z-10 flex h-16 w-full items-center justify-between bg-white px-4 py-2.5 drop-shadow-[0px_6px_10.5px_rgba(7,7,7,0.1)]">
         <div className="flex items-center gap-3">
           <div className="relative size-6 overflow-hidden rounded-[5.714px] bg-[#ff6a00]">
             <div className="absolute inset-[37.5%_15.53%_0_15.33%]">
@@ -59,9 +59,9 @@ export function TerminalIdleScreen() {
         <span className="text-5xl leading-[64px] font-extrabold tracking-[-1px]">{formatCents(digits)}</span>
       </p>
 
-      <div className="absolute top-[280px] left-0 flex flex-col items-start gap-3">
+      <div className="absolute inset-x-0 top-[280px] flex flex-col items-center gap-3">
         {KEY_ROWS.map((row) => (
-          <div key={row.join()} className="flex h-[60px] w-[360px] items-center justify-center gap-[30px] px-8">
+          <div key={row.join()} className="flex h-[60px] w-full items-center justify-center gap-[30px] px-8">
             {row.map((key) => (
               <button
                 key={key}
@@ -74,7 +74,7 @@ export function TerminalIdleScreen() {
             ))}
           </div>
         ))}
-        <div className="flex h-[60px] w-[360px] items-center justify-center gap-[30px] px-8">
+        <div className="flex h-[60px] w-full items-center justify-center gap-[30px] px-8">
           <button
             type="button"
             onClick={() => setDigits("")}
@@ -88,8 +88,8 @@ export function TerminalIdleScreen() {
         </div>
       </div>
 
-      <div className="absolute top-[644px] left-0 flex flex-col items-start">
-        <div className="flex w-[360px] items-start bg-white px-4 py-3.5">
+      <div className="absolute inset-x-0 top-[644px] flex flex-col items-start">
+        <div className="flex w-full items-start justify-center bg-white px-4 py-3.5">
           <button
             type="button"
             disabled={!hasAmount}
@@ -101,7 +101,7 @@ export function TerminalIdleScreen() {
             Confirm and Pay
           </button>
         </div>
-        <div className="flex w-[360px] items-start border-t border-[#dfdfe8] bg-white">
+        <div className="flex w-full items-start border-t border-[#dfdfe8] bg-white">
           {NAV.map((item) => {
             const active = item.id === "payment";
             return (

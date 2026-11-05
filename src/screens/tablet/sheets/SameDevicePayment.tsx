@@ -27,7 +27,7 @@ function Processing() {
 }
 
 /** Figma 3168:22962: the tablet becomes the card reader. */
-function PresentCard({ amount }: { amount: number }) {
+export function PresentCard({ amount, onQr }: { amount: number; onQr?: () => void }) {
   return (
     <div className={cn(rubik.className, "absolute inset-0 bg-[#0e1a34]")}>
       <div className="absolute top-0 left-1/2 h-[800px] w-[360px] -translate-x-1/2">
@@ -43,7 +43,13 @@ function PresentCard({ amount }: { amount: number }) {
         <p className="absolute top-[159px] left-5 -translate-y-1/2 text-2xl leading-none font-light tracking-[-1px] whitespace-nowrap text-[#dae7fc]">
           Present card
         </p>
-        <Image src={`${ASSET}/qr.svg`} alt="Pay by QR" width={60} height={60} className="absolute top-[720px] left-5 size-[60px]" />
+        {onQr ? (
+          <button type="button" aria-label="Pay by QR" onClick={onQr} className="absolute top-[720px] left-5 size-[60px] rounded-full">
+            <Image src={`${ASSET}/qr.svg`} alt="" width={60} height={60} className="size-[60px]" />
+          </button>
+        ) : (
+          <Image src={`${ASSET}/qr.svg`} alt="Pay by QR" width={60} height={60} className="absolute top-[720px] left-5 size-[60px]" />
+        )}
       </div>
     </div>
   );
@@ -53,7 +59,7 @@ function PresentCard({ amount }: { amount: number }) {
  * Figma 3168:23002, animated: the green disc springs in with ripples, the check draws itself,
  * Approved drops in from above and Thank you rises from below.
  */
-function Approved() {
+export function Approved() {
   return (
     <div className={cn(rubik.className, "absolute inset-0 bg-[#0e1a34]")}>
       <div className="absolute top-0 left-1/2 h-[800px] w-[360px] -translate-x-1/2">

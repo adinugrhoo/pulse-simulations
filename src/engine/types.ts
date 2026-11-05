@@ -200,6 +200,8 @@ export type Signal = {
   kind: "info" | "success" | "alert";
   title: string;
   body?: string;
+  /** "table-open" renders the tablet's table chip + action pill instead of the plain card. */
+  variant?: "table-open";
   tick: number;
 };
 

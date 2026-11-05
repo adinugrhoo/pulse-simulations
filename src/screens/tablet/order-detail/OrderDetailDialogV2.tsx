@@ -327,7 +327,7 @@ export function OrderDetailDialogV2({
   const [confirmingClose, setConfirmingClose] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   /** Pay Bill flow: pick a method, key in the cash handed over, then the receipt. */
-  const [payStep, setPayStep] = useState<"method" | "cash" | "confirmed" | "terminal" | null>(null);
+  const [payStep, setPayStep] = useState<"method" | "cash" | "confirmed" | "terminal" | "terminal-confirmed" | null>(null);
   const [cashAmount, setCashAmount] = useState("");
   useEffect(() => {
     const raf = requestAnimationFrame(() => setShow(true));
@@ -339,6 +339,10 @@ export function OrderDetailDialogV2({
   const startTerminalPayment = useSim((s) => s.startTerminalPayment);
   const terminalScreen = useSim((s) => s.terminal.screen);
   const terminalAmount = useSim((s) => s.terminal.amount);
+  const terminalQr = useSim((s) => s.terminal.qrOption);
+  // the terminal reaching its confirmation page latches the tablet onto Payment Confirmed, so the
+  // waiting sheet cannot come back when the terminal later returns to its keypad
+  if (payStep === "terminal" && terminalScreen === "success") setPayStep("terminal-confirmed");
   const table = useSim((s) => s.tables.find((t) => t.id === tableId));
   const orders = useSim((s) => s.orders);
   const waiterCart = useSim((s) => s.waiter.cart);
@@ -414,6 +418,7 @@ export function OrderDetailDialogV2({
   };
   const openPos = () => dispatch({ type: "waiter/open-pos", tableId });
   const closeTable = () => dispatch({ type: "waiter/close-table", tableId });
+  const printQr = () => dispatch({ type: "waiter/print-qr", tableId });
   const payBill = () => {
     setCashAmount("");
     setPayStep("method");
@@ -761,6 +766,7 @@ export function OrderDetailDialogV2({
                 <button
                   type="button"
                   disabled={qrExpired}
+                  onClick={printQr}
                   className={cn(
                     "flex items-center justify-center gap-1.5 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#3a3a3a]",
                     qrExpired ? "w-[124px]" : "w-[102px]",
@@ -804,6 +810,7 @@ export function OrderDetailDialogV2({
           table={table}
           minutesLeft={qrMinutesLeft(table.seatedMinutes)}
           onClose={() => setScanningQr(false)}
+          onPrint={printQr}
           onAddGuest={() => {
             setScanningQr(false);
             setAddingGuest(true);
@@ -847,7 +854,6 @@ export function OrderDetailDialogV2({
           onConfirm={confirmCash}
         />
       ) : null}
-      {/* the terminal reaching its confirmation page is what flips the waiting sheet to Payment Confirmed */}
       {payStep === "terminal" && terminalScreen !== "success" ? (
         terminalPayment ? (
           <CompletePaymentSheet onClose={() => setPayStep(null)} />
@@ -857,11 +863,11 @@ export function OrderDetailDialogV2({
           </div>
         )
       ) : null}
-      {payStep === "terminal" && terminalScreen === "success" ? (
+      {payStep === "terminal-confirmed" ? (
         <PaymentConfirmedSheet
           total={totalBill}
           tendered={terminalAmount ?? totalBill}
-          method="Card"
+          method={terminalPayment && terminalQr ? "QR" : "Card"}
           backLabel="Continue"
           onClose={finishPayment}
         />

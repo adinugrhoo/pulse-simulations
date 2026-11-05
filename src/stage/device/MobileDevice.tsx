@@ -7,7 +7,7 @@ import { useThemeConfig } from "@/theme/hooks";
 import { mobileCssVars } from "@/theme/tokens";
 import { TerminalIdleScreen } from "@/screens/terminal/TerminalIdleScreen";
 import {
-  TerminalDoneScreen,
+  TerminalApprovedScreen,
   TerminalProcessingScreen,
   TerminalSuccessScreen,
   TerminalTapCardScreen,
@@ -19,7 +19,7 @@ const TERMINAL_SCREENS = {
   idle: TerminalIdleScreen,
   processing: TerminalProcessingScreen,
   "tap-card": TerminalTapCardScreen,
-  done: TerminalDoneScreen,
+  done: TerminalApprovedScreen,
   success: TerminalSuccessScreen,
 };
 

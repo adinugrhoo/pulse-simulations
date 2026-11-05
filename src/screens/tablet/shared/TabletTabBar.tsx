@@ -19,7 +19,7 @@ export function TabletTabBar({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "absolute bottom-0 left-1/2 flex w-[1280px] -translate-x-1/2 items-center justify-center bg-[#151515]",
+        "absolute bottom-0 left-1/2 flex w-full -translate-x-1/2 items-center justify-center bg-[#151515]",
         className,
       )}
     >

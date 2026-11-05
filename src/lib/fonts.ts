@@ -17,6 +17,6 @@ export const roboto = Roboto({
 /** The tablet's own card reader screens (same-device payment: present card, approved) use Rubik. */
 export const rubik = Rubik({
   subsets: ["latin"],
-  weight: ["300", "500"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-rubik",
 });
