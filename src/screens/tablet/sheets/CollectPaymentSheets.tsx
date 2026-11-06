@@ -4,28 +4,32 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { currency } from "@/engine/types";
+import type { TerminalQrOption } from "@/engine/state";
 import { CloseIcon, Sheet } from "./PaidTableSheets";
 
 const ASSET = "/figma/tablet-payment";
 
 /**
- * Figma 3148:14809: pick how the waiter collects the bill. Online goes to the SmartPay terminal,
- * offline is Cash or a manual collect. Only Cash has a flow behind it.
+ * Figma 3148:14809: pick how the waiter collects the bill. Online is Tap to pay on the SmartPay terminal
+ * plus PayNow and GrabPay QR, offline is Cash or a manual collect. Only Tap to pay and Cash have a flow behind them.
  */
 export function CollectPaymentSheet({
   total,
   onClose,
   onCash,
   onSmartPay,
+  onQr,
 }: {
   total: number;
   onClose: () => void;
   onCash: () => void;
   /** Only wired in payment mode "terminal", where the Adyen terminal runs the card flow. */
   onSmartPay?: () => void;
+  /** PayNow / GrabPay QR: the terminal opens straight on that wallet's QR. */
+  onQr?: (option: TerminalQrOption) => void;
 }) {
   return (
-    <Sheet width={460} height={548} onClose={onClose}>
+    <Sheet width={460} height={676} onClose={onClose}>
       <div className="absolute top-[58px] left-[30px] flex w-[400px] items-center justify-between">
         <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">Collect Payment</p>
         <CloseIcon size={42} onClick={onClose} />
@@ -45,29 +49,49 @@ export function CollectPaymentSheet({
             <p className="w-full font-semibold text-[#f0f2f7]">Online</p>
             <p className="w-full text-[#888c98]">Credit / Debit Card, NFC, QR Code</p>
           </div>
-          <button
-            type="button"
-            onClick={onSmartPay}
-            className="flex h-[54px] w-full items-center justify-between rounded-2xl border border-[rgba(255,106,0,0.6)] bg-[#8f4f20] px-[17px] py-px transition hover:brightness-125"
-          >
-            <span className="flex items-center gap-3">
-              <span className="flex size-5 items-end justify-center rounded-[4.762px] bg-[#ff6a00] px-[3px]">
-                <Image src={`${ASSET}/smartpay.svg`} alt="" width={14} height={12.5} className="h-[12.5px] w-[14px]" />
+          <div className="flex w-full flex-col gap-2">
+            <button
+              type="button"
+              onClick={onSmartPay}
+              className="flex h-[54px] w-full items-center justify-between rounded-2xl border border-[rgba(255,106,0,0.6)] bg-[#8f4f20] px-[17px] py-px transition hover:brightness-125"
+            >
+              <span className="flex items-center gap-3">
+                <span className="flex size-5 items-end justify-center rounded-[4.762px] bg-[#ff6a00] px-[3px]">
+                  <Image src={`${ASSET}/smartpay.svg`} alt="" width={14} height={12.5} className="h-[12.5px] w-[14px]" />
+                </span>
+                <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#f0f2f7]">Tap to pay</span>
               </span>
-              <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#f0f2f7]">SmartPay Terminal</span>
-            </span>
-            <span className="flex h-5 w-[94px] items-center gap-0.5">
-              <span className="flex h-5 w-[30px] items-center justify-center rounded-[3px] bg-white px-[1.5px]">
-                <Image src={`${ASSET}/visa.svg`} alt="Visa" width={27} height={8} className="h-2 w-[27px]" />
+              <span className="flex h-5 w-[94px] items-center gap-0.5">
+                <span className="flex h-5 w-[30px] items-center justify-center rounded-[3px] bg-white px-[1.5px]">
+                  <Image src={`${ASSET}/visa.svg`} alt="Visa" width={27} height={8} className="h-2 w-[27px]" />
+                </span>
+                <span className="flex h-5 w-[30px] items-center justify-center rounded-[3px] bg-white px-0.5">
+                  <Image src={`${ASSET}/mastercard.svg`} alt="Mastercard" width={26} height={18} className="h-[18px] w-[26px]" />
+                </span>
+                <span className="flex h-5 min-w-px flex-1 items-center justify-center rounded-[3px] bg-white px-1">
+                  <Image src={`${ASSET}/amex.png`} alt="American Express" width={22} height={16} className="h-4 w-[22px] rounded-[4px] object-cover" />
+                </span>
               </span>
-              <span className="flex h-5 w-[30px] items-center justify-center rounded-[3px] bg-white px-0.5">
-                <Image src={`${ASSET}/mastercard.svg`} alt="Mastercard" width={26} height={18} className="h-[18px] w-[26px]" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onQr?.("paynow")}
+              className="flex h-[54px] w-full items-center gap-0.5 rounded-2xl border border-[#5d5d5d] bg-[#202020] px-[17px] py-px transition hover:brightness-125"
+            >
+              <span className="relative h-[18px] w-[30px] overflow-hidden">
+                <Image src={`${ASSET}/paynow.png`} alt="" width={3000} height={1417} className="absolute top-[-39.38%] left-[-69.62%] h-[182.37%] w-[234.93%] max-w-none" />
               </span>
-              <span className="flex h-5 min-w-px flex-1 items-center justify-center rounded-[3px] bg-white px-1">
-                <Image src={`${ASSET}/amex.png`} alt="American Express" width={22} height={16} className="h-4 w-[22px] rounded-[4px] object-cover" />
-              </span>
-            </span>
-          </button>
+              <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#f0f2f7]">PayNow QR</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onQr?.("grabpay")}
+              className="flex h-[54px] w-full items-center gap-2 rounded-2xl border border-[#5d5d5d] bg-[#202020] px-[17px] py-px transition hover:brightness-125"
+            >
+              <Image src={`${ASSET}/grabpay.png`} alt="" width={300} height={260} className="h-5 w-6 object-cover" />
+              <span className="text-base leading-6 font-semibold whitespace-nowrap text-[#f0f2f7]">GrabPay QR</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex w-full flex-col gap-3">
@@ -265,7 +289,7 @@ const STATUS_CHECK_SECONDS = 9;
  * Figma 3148:14871: the waiter's tablet while the customer taps their card on the SmartPay terminal.
  * The sheet is swapped for Payment Confirmed once the terminal reaches its confirmation screen.
  */
-export function CompletePaymentSheet({ onClose }: { onClose: () => void }) {
+export function CompletePaymentSheet({ onClose, qr }: { onClose: () => void; qr?: boolean }) {
   const [left, setLeft] = useState(STATUS_CHECK_SECONDS);
   useEffect(() => {
     const id = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
@@ -287,7 +311,7 @@ export function CompletePaymentSheet({ onClose }: { onClose: () => void }) {
         Complete payment using SmartPay terminal device
       </p>
       <p className="absolute top-[556px] left-1/2 -translate-x-1/2 text-center text-sm leading-[1.2] whitespace-nowrap text-[#888c98]">
-        Please tap, insert or swap card on terminal device
+        {qr ? "Please scan the QR code on terminal device" : "Please tap, insert or swap card on terminal device"}
       </p>
 
       <div className="absolute top-[613px] left-[30px] flex w-[400px] items-start">

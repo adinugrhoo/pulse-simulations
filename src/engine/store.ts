@@ -22,8 +22,8 @@ type SimActions = {
   setScreen: (mobile?: MobileScreenId, tablet?: TabletScreenId) => void;
   dismissSignal: (id: string) => void;
   clearQrPrint: (id: string) => void;
-  /** SmartPay Terminal picked on the tablet: run the terminal through processing, tap card, done, success. */
-  startTerminalPayment: (tableId: string, amount: number, settleAmount: number) => void;
+  /** SmartPay Terminal picked on the tablet: run the terminal through processing, tap card, done, success. A wallet QR picked up front skips straight to that QR. */
+  startTerminalPayment: (tableId: string, amount: number, settleAmount: number, qrOption?: TerminalQrOption) => void;
   setTerminalScreen: (screen: TerminalScreen) => void;
   advanceTerminal: (run: number, to: TerminalScreen, viaQr?: boolean) => void;
   openTerminalQrMenu: () => void;
@@ -107,14 +107,15 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
     if (get().qrPrint?.id === id) set({ qrPrint: undefined });
   },
 
-  startTerminalPayment: (tableId, amount, settleAmount) => {
+  startTerminalPayment: (tableId, amount, settleAmount, qrOption) => {
     // a timestamp, so a run started after a reset never matches a timer left over from before it
     const run = Date.now();
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     set({
       terminal: {
-        screen: "processing",
+        screen: qrOption ? "tap-card" : "processing",
+        qrOption,
         tableId,
         amount,
         settleAmount,
@@ -123,6 +124,10 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
         paymentId: `SP-${5568 + (run % 100)}-${9090 + get().tick}`,
       },
     });
+    if (qrOption) {
+      setTimeout(() => get().advanceTerminal(run, "done", true), TERMINAL_QR_SCAN_MS);
+      return;
+    }
     setTimeout(() => get().advanceTerminal(run, "tap-card"), TERMINAL_PROCESSING_MS);
     setTimeout(() => get().advanceTerminal(run, "done"), TERMINAL_PROCESSING_MS + TERMINAL_TAP_CARD_MS);
   },
