@@ -322,7 +322,7 @@ export function OrderDetailDialogV2({
   /** Default is the table-wide Pulse Summary; tapping a guest avatar swaps in that person's card. */
   const [view, setView] = useState<GuestView>("all");
   const [addingGuest, setAddingGuest] = useState(false);
-  /** Dynamic QR: "+ Add" opens the Scan to Order sheet first; its Add Guest button leads on to the guest form. */
+  /** Dynamic QR: the Print QR button opens the Scan to Order sheet. */
   const [scanningQr, setScanningQr] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -470,7 +470,7 @@ export function OrderDetailDialogV2({
                 <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">Guest list</p>
                 <button
                   type="button"
-                  onClick={() => (dynamicQr ? setScanningQr(true) : setAddingGuest(true))}
+                  onClick={() => setAddingGuest(true)}
                   className="-mr-2 flex items-center gap-0.5 rounded-lg px-2 py-1.5 transition hover:bg-white/5"
                 >
                   <Image src={`${ASSET}/plus-small.svg`} alt="" width={14} height={14} className="size-[14px]" />
@@ -766,7 +766,7 @@ export function OrderDetailDialogV2({
                 <button
                   type="button"
                   disabled={qrExpired}
-                  onClick={printQr}
+                  onClick={() => setScanningQr(true)}
                   className={cn(
                     "flex items-center justify-center gap-1.5 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#3a3a3a]",
                     qrExpired ? "w-[124px]" : "w-[102px]",
@@ -774,7 +774,7 @@ export function OrderDetailDialogV2({
                 >
                   <Image src={`${ASSET}/printer.svg`} alt="" width={14} height={14} className={cn("size-[14px]", qrExpired && "opacity-40")} />
                   <span className={cn("text-sm leading-none font-bold whitespace-nowrap", qrExpired ? "text-[#939393]" : "text-[#fff8eb]")}>
-                    {qrExpired ? "QR expired" : "QR Order"}
+                    {qrExpired ? "QR expired" : "Print QR"}
                   </span>
                 </button>
               ) : null}
@@ -811,10 +811,6 @@ export function OrderDetailDialogV2({
           minutesLeft={qrMinutesLeft(table.seatedMinutes)}
           onClose={() => setScanningQr(false)}
           onPrint={printQr}
-          onAddGuest={() => {
-            setScanningQr(false);
-            setAddingGuest(true);
-          }}
         />
       ) : null}
       {addingGuest ? (
@@ -843,6 +839,10 @@ export function OrderDetailDialogV2({
             startTerminalPayment(tableId, balance, totalBill);
             setPayStep("terminal");
           }}
+          onQr={(option) => {
+            startTerminalPayment(tableId, balance, totalBill, option);
+            setPayStep("terminal");
+          }}
         />
       ) : null}
       {payStep === "cash" ? (
@@ -856,10 +856,10 @@ export function OrderDetailDialogV2({
       ) : null}
       {payStep === "terminal" && terminalScreen !== "success" ? (
         terminalPayment ? (
-          <CompletePaymentSheet onClose={() => setPayStep(null)} />
+          <CompletePaymentSheet onClose={() => setPayStep(null)} qr={!!terminalQr} />
         ) : (
           <div className="absolute inset-0 z-50">
-            <SameDevicePaymentOverlay screen={terminalScreen} amount={terminalAmount ?? balance} />
+            <SameDevicePaymentOverlay screen={terminalScreen} amount={terminalAmount ?? balance} qrOption={terminalQr} />
           </div>
         )
       ) : null}

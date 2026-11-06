@@ -159,7 +159,7 @@ function QrMenu({
 }
 
 /** Figma 5359:7616: a wallet's QR for the customer to scan, with that wallet's logo in the middle. */
-function QrPayment({
+export function QrPayment({
   option,
   amount,
 }: {

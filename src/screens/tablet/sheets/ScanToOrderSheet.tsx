@@ -9,24 +9,22 @@ const ghostButton =
   "absolute left-[30px] flex w-[400px] items-center justify-center gap-3 rounded-xl border border-[#6e5e41] bg-[#1b1b1b] px-3 py-4 transition hover:brightness-125";
 
 /**
- * Figma 3148:16104: the "+ Add" bottom sheet on a dynamic-QR table. Shows the table's QR for the
- * customer to scan with their own phone, or hands over to the regular Add Guest sheet.
+ * Figma 3148:16104: the "Print QR" bottom sheet on a dynamic-QR table. Shows the table's QR for the
+ * customer to scan with their own phone.
  */
 export function ScanToOrderSheet({
   table,
   minutesLeft,
   onClose,
-  onAddGuest,
   onPrint,
 }: {
   table: Table;
   minutesLeft: number;
   onClose: () => void;
-  onAddGuest: () => void;
   onPrint: () => void;
 }) {
   return (
-    <Sheet width={460} height={731} onClose={onClose}>
+    <Sheet width={460} height={650} onClose={onClose}>
       <div className="absolute top-[58px] left-[30px] flex h-[42px] w-[400px] items-center justify-between">
         <p className="text-2xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">Scan to Order</p>
         <CloseIcon size={42} onClick={onClose} />
@@ -56,11 +54,7 @@ export function ScanToOrderSheet({
         {table.label}
       </p>
 
-      <button type="button" onClick={onAddGuest} className={`${ghostButton} top-[597px]`}>
-        <Image src={`${ASSET}/add-guest.svg`} alt="" width={14} height={14} className="size-[14px]" />
-        <span className="text-sm leading-none font-bold whitespace-nowrap text-[#e8bc6b]">Add Guest</span>
-      </button>
-      <button type="button" onClick={onPrint} className={`${ghostButton} top-[655px]`}>
+      <button type="button" onClick={onPrint} className={`${ghostButton} top-[575px]`}>
         <Image src={`${ASSET}/printer-gold.svg`} alt="" width={14} height={14} className="size-[14px]" />
         <span className="text-sm leading-none font-bold whitespace-nowrap text-[#e8bc6b]">Print QR Order</span>
       </button>

@@ -4,7 +4,8 @@ import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { figtree, rubik } from "@/lib/fonts";
 import { currency } from "@/engine/types";
-import type { TerminalScreen } from "@/engine/state";
+import type { TerminalQrOption, TerminalScreen } from "@/engine/state";
+import { QrPayment } from "@/screens/terminal/TerminalPaymentScreens";
 
 const ASSET = "/figma/tablet-payment/same-device";
 
@@ -94,9 +95,27 @@ export function Approved() {
  * Same-device payment: SmartPay runs on the waiter's tablet itself, full screen over the order
  * detail, through the same timed steps as the terminal (processing, present card, approved).
  */
-export function SameDevicePaymentOverlay({ screen, amount }: { screen: TerminalScreen; amount: number }) {
+export function SameDevicePaymentOverlay({
+  screen,
+  amount,
+  qrOption,
+}: {
+  screen: TerminalScreen;
+  amount: number;
+  qrOption?: TerminalQrOption;
+}) {
   if (screen === "processing") return <Processing />;
-  if (screen === "tap-card") return <PresentCard amount={amount} />;
+  if (screen === "tap-card") {
+    if (!qrOption) return <PresentCard amount={amount} />;
+    // the wallet QR page is laid out for the terminal's narrow screen, so it sits centred on the tablet
+    return (
+      <div className="absolute inset-0 bg-[#0e1a34]">
+        <div className="absolute inset-y-0 left-1/2 w-[400px] -translate-x-1/2">
+          <QrPayment option={qrOption} amount={amount} />
+        </div>
+      </div>
+    );
+  }
   if (screen === "done") return <Approved />;
   return null;
 }
