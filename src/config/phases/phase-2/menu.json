@@ -1,4 +1,43 @@
 {
+  "dishes": {
+    "d8": {
+      "soldOut": true
+    },
+    "p-cucumber": {
+      "schedule": {
+        "days": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "sat"
+        ],
+        "times": [
+          {
+            "from": "02:10",
+            "to": "22:00"
+          }
+        ]
+      }
+    },
+    "p-jellyfish": {
+      "schedule": {
+        "days": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "sat"
+        ],
+        "times": [
+          {
+            "from": "02:10",
+            "to": "22:00"
+          }
+        ]
+      }
+    }
+  },
   "added": [
     {
       "id": "p-hot-latte",

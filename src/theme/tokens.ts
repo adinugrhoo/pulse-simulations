@@ -39,9 +39,19 @@ export type PosTokens = {
   sub: string;
   stepWrap: string;
   stepBtn: string;
+  /** Main action (Confirm Order, Save Modifier, Save note); Pulse: Pay Bill's gold gradient. */
   confirmOn: string;
+  /** Disabled main action, shared by every main action button. */
   confirmOff: string;
+  /** Secondary action; Pulse: "+ Add to Order", dark gold wash with a gold outline. */
+  secondary: string;
+  /** Neutral action (Cancel); Pulse: Receipt / Add Order, dark fill with a grey-gold outline. */
+  outline: string;
   row: string;
+  /** Name, price and photo of a dish its schedule makes unavailable. */
+  muted: string;
+  /** The "Unavailable Mon–Thu, ..." label under it. */
+  warn: string;
 };
 
 export type TabletTokens = {

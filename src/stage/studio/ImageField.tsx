@@ -91,25 +91,25 @@ export function ImageField({
             placeholder="/figma/... or https://..."
             className={input}
           />
-          <p className="text-[10px] leading-snug text-neutral-500">
+          <p className="text-xs leading-snug text-neutral-500">
             {STUDIO_MODE === "file"
               ? "Uploads land in public/uploads; commit them with the menu."
               : "Read-only deploy: uploads are stored in this browser only."}
           </p>
-          {error ? <p className="text-[10px] text-red-400">{error}</p> : null}
+          {error ? <p className="text-xs text-red-400">{error}</p> : null}
         </div>
       </div>
 
       {showGallery ? (
         <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900/60 p-2">
           {!gallery ? (
-            <p className="p-2 text-[11px] text-neutral-500">Loading…</p>
+            <p className="p-2 text-[13px] text-neutral-500">Loading…</p>
           ) : gallery.length === 0 ? (
-            <p className="p-2 text-[11px] text-neutral-500">No images found.</p>
+            <p className="p-2 text-[13px] text-neutral-500">No images found.</p>
           ) : (
             gallery.map((g) => (
               <div key={g.folder} className="mb-2">
-                <p className="px-1 pb-1 font-mono text-[10px] text-neutral-500">{g.folder}</p>
+                <p className="px-1 pb-1 font-mono text-xs text-neutral-500">{g.folder}</p>
                 <div className="grid grid-cols-6 gap-1.5">
                   {g.images.map((img) => (
                     <button
@@ -139,12 +139,12 @@ export function ImageField({
 }
 
 export const input =
-  "w-full rounded-md border border-neutral-800 bg-neutral-900 px-2.5 py-1.5 text-xs text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500";
+  "w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500";
 
 export const btn = (active?: boolean) =>
   cn(
-    "rounded-md border px-2.5 py-1 text-[11px] font-medium transition disabled:opacity-40",
+    "h-9 rounded-lg border px-3 text-[13px] font-medium transition disabled:opacity-40",
     active
-      ? "border-neutral-500 bg-neutral-800 text-white"
-      : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600",
+      ? "border-white/25 bg-white/[0.12] text-white"
+      : "border-white/10 bg-white/[0.04] text-neutral-300 hover:border-white/20 hover:text-white",
   );

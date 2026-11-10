@@ -30,9 +30,15 @@ export type SimEvent =
   | { type: "waiter/pos-open-category"; categoryId: string }
   | { type: "waiter/pos-close-category" }
   | { type: "waiter/pos-pick-subcategory"; subcategoryId: string }
+  /** Opens (or, with null, closes) the schedule popover of a dish its merchant schedule blocks. */
+  | { type: "waiter/pos-schedule-info"; dishId: string | null }
   | { type: "waiter/increment-cart-line"; lineId: string }
   | { type: "waiter/decrement-cart-line"; lineId: string }
   | { type: "waiter/remove-cart-line"; lineId: string }
+  /** Opens (or, with null, closes) the order-note dialog for a bucket line. */
+  | { type: "waiter/open-line-note"; lineId: string | null }
+  /** Saves a bucket line's order note (blank clears it) and closes the dialog. */
+  | { type: "waiter/set-line-note"; lineId: string; notes: string }
   | { type: "waiter/replace-cart-line"; lineId: string; line: Omit<CartLine, "lineId"> }
   | { type: "waiter/open-order"; orderId: string }
   | { type: "waiter/add-to-cart"; tableId: string; line: Omit<CartLine, "lineId"> }

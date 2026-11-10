@@ -25,6 +25,21 @@ export const SCENARIO: Step[] = [
     event: { type: "waiter/open-pos", tableId: DEFAULT_TABLE_ID },
   },
   {
+    id: "p2-3-tbd1",
+    title: "Waiter opens Appetizers",
+    actor: "waiter",
+    expect:
+      "Deep Fried Beancurd Skin Roll carries a Sold out chip and can't be tapped. Smacked Cucumber Salad and Chilled Jellyfish are greyed out too, each saying when it's back: the merchant blocks them Mon–Thu, Sat, 02:10–22:00",
+    event: { type: "waiter/pos-open-category", categoryId: "appetizers" },
+  },
+  {
+    id: "p2-3-tbd2",
+    title: "Waiter taps the greyed-out Chilled Jellyfish",
+    actor: "waiter",
+    expect: "Its schedule pops over the card; nothing goes into the bucket",
+    event: { type: "waiter/pos-schedule-info", dishId: "p-jellyfish" },
+  },
+  {
     id: "p2-3a",
     title: "Waiter opens Drinks",
     actor: "waiter",
@@ -79,6 +94,26 @@ export const SCENARIO: Step[] = [
     expect: "Order Bucket lists the dish and the subtotal updates",
     event: (_state, { menu }) =>
       withDish(menu, "d1", 2, (line) => ({ type: "waiter/add-to-cart", tableId: DEFAULT_TABLE_ID, line })),
+  },
+  {
+    id: "p2-4-note1",
+    title: "Waiter taps Add note on the dumplings",
+    actor: "waiter",
+    expect: "A note dialog opens in the middle of the POS page, with quick-note chips under the text box",
+    event: (state) => {
+      const line = state.waiter.cart.find((l) => l.itemId === "d1");
+      return line ? { type: "waiter/open-line-note", lineId: line.lineId } : null;
+    },
+  },
+  {
+    id: "p2-4-note2",
+    title: "Waiter saves “No spring onion, Less spicy”",
+    actor: "waiter",
+    expect: "The dialog closes and the dumplings line shows the note; tapping it opens the note again",
+    event: (state) => {
+      const line = state.waiter.cart.find((l) => l.itemId === "d1");
+      return line ? { type: "waiter/set-line-note", lineId: line.lineId, notes: "No spring onion, Less spicy" } : null;
+    },
   },
   {
     id: "p2-5",

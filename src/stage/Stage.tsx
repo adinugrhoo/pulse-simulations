@@ -1,23 +1,34 @@
 "use client";
 
-import { useEffect } from "react";
-import { GLOBAL_CONFIG } from "@/config/global";
+import { useEffect, useState } from "react";
 import { PHASES } from "@/config/phases";
+import { cn } from "@/lib/cn";
 import { useSim } from "@/engine/store";
 import { useMenuStore } from "@/menu/store";
 import { useThemeChoice } from "@/theme/store";
 import { MobileDevice } from "./device/MobileDevice";
 import { StageErrorBoundary } from "./ErrorBoundary";
 import { TabletDevice } from "./device/TabletDevice";
-import { PhaseSelect } from "./header/PhaseSelect";
 import { ScenarioBar } from "./header/ScenarioBar";
-import { PaymentModeSelect } from "./header/PaymentModeSelect";
-import { QrTypeSelect } from "./header/QrTypeSelect";
-import { ThemeSelect } from "./header/ThemeSelect";
-import { MenuStudioButton } from "./studio/MenuStudio";
+import { ControlSidebar } from "./nav/ControlSidebar";
+import { GLASS, PROGRESSIVE_BLUR } from "./glass";
 
 /** Full site view: customer mobile on the left, waiter tablet on the right. */
 export function Stage() {
+  /** Recording mode: F hides the floating step runner and sidebar button, F again brings them back. */
+  const [chromeHidden, setChromeHidden] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "f" || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      // typing an F into a field (the POS search, a note) isn't a shortcut
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
+      setChromeHidden((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // browser-stored state (unsaved studio edits, the selected phase and themes) loads after
   // the first render, so it matches the server render
   useEffect(() => {
@@ -46,19 +57,36 @@ export function Stage() {
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden bg-neutral-900 text-neutral-100">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-950 px-6 py-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-sm font-semibold tracking-wide">{GLOBAL_CONFIG.appName}</h1>
-          <PhaseSelect />
-          <ThemeSelect />
-          <QrTypeSelect />
-          <PaymentModeSelect />
-          <MenuStudioButton />
-        </div>
+      {/* liquid-glass top edge: progressive blur under the floating button and step runner */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 h-[96px]">
+        {PROGRESSIVE_BLUR.map((l) => (
+          <div
+            key={l.blur}
+            className="absolute inset-0"
+            style={{
+              backdropFilter: `blur(${l.blur}px) saturate(1.4)`,
+              WebkitBackdropFilter: `blur(${l.blur}px) saturate(1.4)`,
+              maskImage: `linear-gradient(to bottom, black 0%, black ${l.stop * 0.4}%, transparent ${l.stop}%)`,
+              WebkitMaskImage: `linear-gradient(to bottom, black 0%, black ${l.stop * 0.4}%, transparent ${l.stop}%)`,
+            }}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/70 via-neutral-900/25 to-transparent" />
+      </div>
+      <ControlSidebar hidden={chromeHidden} />
+      {/* step runner stays one tap away; everything else lives in the sidebar */}
+      <div
+        inert={chromeHidden}
+        className={cn(
+          "fixed top-4 right-4 z-50 rounded-2xl p-1.5 transition duration-300",
+          GLASS,
+          chromeHidden && "pointer-events-none -translate-y-2 opacity-0",
+        )}
+      >
         <ScenarioBar />
-      </header>
+      </div>
 
-      <main className="flex min-h-0 flex-1 gap-6 p-6">
+      <main className="flex min-h-0 flex-1 gap-6 px-6 pt-[72px] pb-6">
         <div className="flex min-h-0 w-[26%] min-w-[240px] max-w-[380px] flex-col">
           <StageErrorBoundary label="Mobile">
             <MobileDevice />

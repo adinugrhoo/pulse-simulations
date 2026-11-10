@@ -34,6 +34,7 @@ export function ScenarioBar() {
         label={current ? current.title : "Scenario"}
         chip={countChip(`${Math.max(stepIndex + 1, 0)}/${SCENARIO.length}`)}
         width={380}
+        align="right"
       >
         {(close) => (
           <ol className="flex flex-col gap-1">
@@ -81,20 +82,20 @@ export function ScenarioBar() {
         <button
           onClick={prev}
           disabled={stepIndex < 0}
-          className="rounded-md bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 disabled:opacity-40"
+          className="rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-1.5 text-xs text-neutral-100 transition hover:bg-white/[0.12] disabled:opacity-40 disabled:hover:bg-white/[0.06]"
         >
           Back
         </button>
         <button
           onClick={next}
           disabled={atEnd}
-          className="rounded-md bg-white px-4 py-1.5 text-xs font-semibold text-neutral-900 disabled:opacity-40"
+          className="rounded-lg bg-white/90 px-4 py-1.5 text-xs font-semibold text-neutral-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition hover:bg-white disabled:opacity-40"
         >
           Next step
         </button>
         <button
           onClick={reset}
-          className="rounded-md bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200"
+          className="rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-1.5 text-xs text-neutral-100 transition hover:bg-white/[0.12]"
         >
           Reset
         </button>

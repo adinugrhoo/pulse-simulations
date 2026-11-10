@@ -51,7 +51,7 @@ export function CategoryEditor({ view, onPickDish }: { view: LayerView; onPickDi
         </div>
       </div>
 
-      <p className="px-4 pt-3 text-[10px] leading-snug text-neutral-500">
+      <p className="px-4 pt-3 text-xs leading-snug text-neutral-500">
         {view.isGlobal
           ? "Base list every phase and theme starts from."
           : owns
@@ -68,14 +68,14 @@ export function CategoryEditor({ view, onPickDish }: { view: LayerView; onPickDi
               <div className="flex items-center gap-2 p-2">
                 {device === "mobile" ? (
                   <span className="relative size-8 shrink-0 overflow-hidden rounded-full bg-neutral-800">
-                    <DishImage src={(c as MobileCategory).image} alt={c.name} sizes="32px" className="object-cover text-[10px]" />
+                    <DishImage src={(c as MobileCategory).image} alt={c.name} sizes="32px" className="object-cover text-xs" />
                   </span>
                 ) : (
                   <span className="size-8 shrink-0 rounded-md" style={{ background: color }} />
                 )}
                 <button type="button" onClick={() => setOpenId(open ? null : c.id)} className="min-w-0 flex-1 text-left">
-                  <span className="block truncate text-xs font-medium text-neutral-100">{c.name}</span>
-                  <span className="text-[10px] text-neutral-500">{c.dishIds.length} dishes</span>
+                  <span className="block truncate text-sm font-medium text-neutral-100">{c.name}</span>
+                  <span className="text-xs text-neutral-500">{c.dishIds.length} dishes</span>
                 </button>
                 <button type="button" disabled={i === 0} onClick={() => moveCategory(view.key, device, c.id, -1)} className={btn()} aria-label="Move up">
                   ↑
@@ -94,12 +94,12 @@ export function CategoryEditor({ view, onPickDish }: { view: LayerView; onPickDi
               {open ? (
                 <div className="flex flex-col gap-3 border-t border-neutral-800 p-3">
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="flex flex-col gap-1 text-[11px] text-neutral-400">
+                    <label className="flex flex-col gap-1 text-[13px] text-neutral-400">
                       Name
                       <TextInput key={`n:${c.name}`} value={c.name} onCommit={(name) => name && updateCategory(view.key, device, c.id, { name })} />
                     </label>
                     {device === "mobile" ? (
-                      <label className="flex flex-col gap-1 text-[11px] text-neutral-400">
+                      <label className="flex flex-col gap-1 text-[13px] text-neutral-400">
                         Short label
                         <TextInput
                           key={`l:${(c as MobileCategory).label}`}
@@ -109,7 +109,7 @@ export function CategoryEditor({ view, onPickDish }: { view: LayerView; onPickDi
                         />
                       </label>
                     ) : (
-                      <label className="flex flex-col gap-1 text-[11px] text-neutral-400">
+                      <label className="flex flex-col gap-1 text-[13px] text-neutral-400">
                         Tile colour
                         <input
                           type="color"
@@ -132,10 +132,10 @@ export function CategoryEditor({ view, onPickDish }: { view: LayerView; onPickDi
                   ) : null}
 
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] text-neutral-400">Dishes, in order (assign dishes from the Dishes tab)</span>
+                    <span className="text-[13px] text-neutral-400">Dishes, in order (assign dishes from the Dishes tab)</span>
                     {c.dishIds.map((id, j) => (
                       <div key={id} className="flex items-center gap-2 rounded-md bg-neutral-900 px-2 py-1">
-                        <button type="button" onClick={() => onPickDish(id)} className="min-w-0 flex-1 truncate text-left text-[11px] text-neutral-200 hover:underline">
+                        <button type="button" onClick={() => onPickDish(id)} className="min-w-0 flex-1 truncate text-left text-[13px] text-neutral-200 hover:underline">
                           {byId[id]?.name ?? id}
                         </button>
                         <button type="button" disabled={j === 0} onClick={() => moveDishInCategory(view.key, device, c.id, id, -1)} className={cn(btn(), "px-1.5 py-0")}>
