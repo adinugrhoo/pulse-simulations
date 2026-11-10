@@ -299,6 +299,10 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         if (draft.waiter.pos) draft.waiter.pos.subcategoryId = event.subcategoryId;
         break;
 
+      case "waiter/pos-schedule-info":
+        if (draft.waiter.pos) draft.waiter.pos.scheduleDishId = event.dishId ?? undefined;
+        break;
+
       case "waiter/increment-cart-line": {
         const line = draft.waiter.cart.find((l) => l.lineId === event.lineId);
         if (line) line.qty += 1;
@@ -314,6 +318,17 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
 
       case "waiter/remove-cart-line": {
         draft.waiter.cart = draft.waiter.cart.filter((l) => l.lineId !== event.lineId);
+        break;
+      }
+
+      case "waiter/open-line-note":
+        draft.waiter.noteLineId = event.lineId ?? undefined;
+        break;
+
+      case "waiter/set-line-note": {
+        const line = draft.waiter.cart.find((l) => l.lineId === event.lineId);
+        if (line) line.notes = event.notes.trim() || undefined;
+        draft.waiter.noteLineId = undefined;
         break;
       }
 

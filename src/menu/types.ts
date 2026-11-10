@@ -7,6 +7,8 @@
  * Studio edits those same files.
  */
 
+import type { ScheduleRule } from "./schedule";
+
 export type Dish = {
   id: string;
   name: string;
@@ -18,6 +20,10 @@ export type Dish = {
   kcal?: number;
   /** Dietary/heat tags; the first one gets the icon, the rest collapse into "+N". */
   tags?: string[];
+  /** Time-based display rule from the merchant dashboard: when the dish can't be ordered. */
+  schedule?: ScheduleRule;
+  /** Marked sold out by the merchant: the POS greys the dish out with a "Sold out" chip and won't add it. */
+  soldOut?: boolean;
 };
 
 /** A section of the customer's "For You" menu (mobile). */

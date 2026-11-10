@@ -4,6 +4,7 @@
  */
 
 import { isImageRef } from "./resolve";
+import { isScheduleRule } from "./schedule";
 
 type Obj = Record<string, unknown>;
 
@@ -19,6 +20,8 @@ const DISH_FIELDS: Record<string, (v: unknown) => boolean> = {
   description: isStr,
   kcal: isNum,
   tags: isStrArr,
+  schedule: isScheduleRule,
+  soldOut: (v) => typeof v === "boolean",
 };
 
 const checkDishFields = (d: Obj, where: string): string | null => {

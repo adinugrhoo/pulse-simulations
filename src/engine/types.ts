@@ -184,11 +184,14 @@ export type WaiterSession = {
   openTableId?: string;
   selectedOrderId?: string;
   cart: CartLine[];
+  /** Bucket line whose order-note dialog is open on the POS page. */
+  noteLineId?: string;
   /**
    * POS category the waiter has open. A category with subcategories gets its own page
-   * (Figma 3124:186); no `subcategoryId` means its first subcategory.
+   * (Figma 3124:186); no `subcategoryId` means its first subcategory. `scheduleDishId` is
+   * the scheduled (TBD) dish whose schedule popover is open.
    */
-  pos?: { categoryId: string; subcategoryId?: string };
+  pos?: { categoryId: string; subcategoryId?: string; scheduleDishId?: string };
 };
 
 /* -------------------------------- signals -------------------------------- */

@@ -28,6 +28,8 @@ export type ModifierGroup = {
   layout?: "tiles" | "cards" | "plain" | "hidden";
   /** Several options may be picked at once (add-ons). */
   multiple?: boolean;
+  /** Most picks a "multiple" group takes, stacked counts included. Unset means no limit. */
+  max?: number;
   /** Tiles quote the full price, cards quote "+SGD" on top of it. Groups without one show no price. */
   priceStyle?: "full" | "addon";
   /** Optional groups never block Save Modifier and carry no Required / Fulfilled status. */
@@ -140,6 +142,7 @@ const mainCustomisation = (dish: Dish, price: number): Customisation => ({
       layout: "cards",
       priceStyle: "addon",
       multiple: true,
+      max: 3,
       optional: true,
       options: [
         { id: "fried-egg", name: "Fried Egg", price: 2.5 },
@@ -207,6 +210,7 @@ const STANDALONE: Record<string, Customisation> = {
         layout: "cards",
         priceStyle: "addon",
         multiple: true,
+        max: 3,
         optional: true,
         options: [
           { id: "extra-pork", name: "Extra BBQ Pork", price: 4 },
@@ -237,6 +241,7 @@ const STANDALONE: Record<string, Customisation> = {
         layout: "cards",
         priceStyle: "addon",
         multiple: true,
+        max: 2,
         optional: true,
         options: [
           { id: "chilli-oil", name: "Chilli Oil", price: 1 },
@@ -300,6 +305,7 @@ const EXTRA_SHOT: ModifierGroup = {
   layout: "cards",
   priceStyle: "addon",
   multiple: true,
+  max: 3,
   optional: true,
   options: [
     { id: "extra-shot", name: "Extra Shot", price: 1.5 },

@@ -8,8 +8,16 @@ import { getTheme, type PaymentMode, type PhaseId, type QrType, type ThemeId } f
  * sessionStorage so a dev reload (e.g. after the Menu Studio saves a menu.json) lands
  * back on the same phase and theme.
  */
+/**
+ * What the POS checks dish schedules against: the real clock, or a forced answer so a
+ * demo shows the unavailable state (or hides it) whatever the time is.
+ */
+export type ScheduleClock = "live" | "unavailable" | "available";
+
 type ThemeChoice = {
   byPhase: Record<PhaseId, ThemeId>;
+  scheduleClock: ScheduleClock;
+  setScheduleClock: (clock: ScheduleClock) => void;
   lastPhase?: PhaseId;
   lastQrType?: QrType;
   lastPaymentMode?: PaymentMode;
@@ -23,6 +31,9 @@ export const useThemeChoice = create<ThemeChoice>()(
   persist(
     (set) => ({
       byPhase: {},
+      // demos show scheduled dishes blocked whatever the time; "live" is one pick away
+      scheduleClock: "unavailable",
+      setScheduleClock: (scheduleClock) => set({ scheduleClock }),
       setTheme: (phaseId, themeId) => set((s) => ({ byPhase: { ...s.byPhase, [phaseId]: themeId } })),
       rememberPhase: (lastPhase) => set({ lastPhase }),
       rememberQrType: (lastQrType) => set({ lastQrType }),
@@ -31,7 +42,16 @@ export const useThemeChoice = create<ThemeChoice>()(
     {
       name: "pulse-view",
       storage: createJSONStorage(() => sessionStorage),
-      partialize: (s) => ({ byPhase: s.byPhase, lastPhase: s.lastPhase, lastQrType: s.lastQrType, lastPaymentMode: s.lastPaymentMode }),
+      // v1: schedule clock default moved to "unavailable"; drop the old "live" pick
+      version: 1,
+      migrate: (persisted) => ({ ...(persisted as object), scheduleClock: "unavailable" }) as ThemeChoice,
+      partialize: (s) => ({
+        byPhase: s.byPhase,
+        scheduleClock: s.scheduleClock,
+        lastPhase: s.lastPhase,
+        lastQrType: s.lastQrType,
+        lastPaymentMode: s.lastPaymentMode,
+      }),
       // rehydrated from the Stage after mount, like the menu drafts
       skipHydration: true,
     },

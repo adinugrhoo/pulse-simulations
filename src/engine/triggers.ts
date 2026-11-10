@@ -54,9 +54,12 @@ export const TRIGGERS: { [T in SimEventType]?: Trigger<T> } = {
   "waiter/pos-open-category": { tablet: "pos-order" },
   "waiter/pos-close-category": {},
   "waiter/pos-pick-subcategory": {},
+  "waiter/pos-schedule-info": {},
   "waiter/increment-cart-line": {},
   "waiter/decrement-cart-line": {},
   "waiter/remove-cart-line": {},
+  "waiter/open-line-note": {},
+  "waiter/set-line-note": {},
   "waiter/replace-cart-line": {},
   "waiter/close-order-detail": { tablet: "tables" },
   // items the waiter adds never move the customer's phone; the bill page picks them up from state

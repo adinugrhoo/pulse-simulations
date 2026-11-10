@@ -27,21 +27,21 @@ export function DishEditor({ view, dishId }: { view: LayerView; dishId: string }
   if (removed) {
     return (
       <div className="flex flex-col gap-3 p-5">
-        <h3 className="text-sm font-semibold text-neutral-100">{removed.name}</h3>
-        <p className="text-xs text-neutral-400">Hidden on this layer and every layer below it.</p>
+        <h3 className="text-[15px] font-semibold text-neutral-100">{removed.name}</h3>
+        <p className="text-sm text-neutral-400">Hidden on this layer and every layer below it.</p>
         <button type="button" onClick={() => restoreDish(view.key, dishId)} className={cn(btn(), "self-start")}>
           Restore dish
         </button>
       </div>
     );
   }
-  if (!dish) return <p className="p-5 text-xs text-neutral-500">Pick a dish on the left.</p>;
+  if (!dish) return <p className="p-5 text-sm text-neutral-500">Pick a dish on the left.</p>;
 
   /** Badge next to a field label: set on this layer, or inherited from above. */
   const origin = (field: Field) => {
     if (view.isGlobal || status.ownedHere) return null;
     return status.overridden.includes(field) ? (
-      <span className="flex items-center gap-1 text-[10px] text-amber-300">
+      <span className="flex items-center gap-1 text-xs text-amber-300">
         set here
         <button
           type="button"
@@ -53,7 +53,7 @@ export function DishEditor({ view, dishId }: { view: LayerView; dishId: string }
         </button>
       </span>
     ) : (
-      <span className="text-[10px] text-neutral-600">inherited</span>
+      <span className="text-xs text-neutral-600">inherited</span>
     );
   };
 
@@ -63,8 +63,8 @@ export function DishEditor({ view, dishId }: { view: LayerView; dishId: string }
     <div className="flex flex-col gap-4 p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold text-neutral-100">{dish.name}</h3>
-          <p className="font-mono text-[10px] text-neutral-500">{dish.id}</p>
+          <h3 className="truncate text-[15px] font-semibold text-neutral-100">{dish.name}</h3>
+          <p className="font-mono text-xs text-neutral-500">{dish.id}</p>
         </div>
         <div className="flex shrink-0 gap-1.5">
           {!view.isGlobal && status.overridden.length ? (
@@ -152,7 +152,7 @@ function CategoryPicker({ view, dishId, device }: { view: LayerView; dishId: str
               type="button"
               onClick={() => toggle(c.id)}
               className={cn(
-                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition",
+                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[13px] transition",
                 on
                   ? "border-white/50 bg-white/10 text-white"
                   : "border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-300",
@@ -163,7 +163,7 @@ function CategoryPicker({ view, dishId, device }: { view: LayerView; dishId: str
             </button>
           );
         })}
-        {list.length === 0 ? <span className="text-[11px] text-neutral-600">No categories yet.</span> : null}
+        {list.length === 0 ? <span className="text-[13px] text-neutral-600">No categories yet.</span> : null}
       </div>
     </Row>
   );
@@ -173,7 +173,7 @@ function Row({ label, hint, origin, children }: { label: string; hint?: string; 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-neutral-400">
+        <span className="text-[13px] font-medium text-neutral-400">
           {label}
           {hint ? <span className="ml-1 font-normal text-neutral-600">({hint})</span> : null}
         </span>

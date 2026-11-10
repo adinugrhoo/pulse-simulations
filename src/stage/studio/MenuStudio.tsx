@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { getPhase } from "@/config/phases";
 import { useSim } from "@/engine/store";
@@ -11,7 +12,7 @@ import { dirtyKeys, isDirty, isStale, useMenuStore } from "@/menu/store";
 import type { MenuPatch } from "@/menu/types";
 import { useThemeId } from "@/theme/hooks";
 import { useThemeChoice } from "@/theme/store";
-import { StageErrorBoundary } from "../ErrorBoundary";
+import { GLASS } from "../glass";
 import { CategoryEditor } from "./CategoryEditor";
 import { DishEditor } from "./DishEditor";
 import { btn, input } from "./ImageField";
@@ -20,39 +21,11 @@ import { useLayerView, type LayerView } from "./useLayerView";
 
 const folderOf = (phaseId: string) => getPhase(phaseId).folder;
 
-/** Header button that opens the studio; shows how many layers have unsaved edits. */
-export function MenuStudioButton() {
-  const [open, setOpen] = useState(false);
-  const dirty = useMenuStore((s) => dirtyKeys(s).length);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-300 transition hover:border-neutral-700"
-      >
-        Menu Studio
-        {dirty ? (
-          <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
-            {dirty} unsaved
-          </span>
-        ) : null}
-      </button>
-      {open ? (
-        <StageErrorBoundary label="Menu Studio">
-          <MenuStudio onClose={() => setOpen(false)} />
-        </StageErrorBoundary>
-      ) : null}
-    </>
-  );
-}
-
 /**
- * The Menu Studio window: pick a layer (Global, a phase, or a theme inside it), then edit
- * dish photos, names, prices and categories there. Devices update live; Save writes the
- * layer's menu.json.
+ * The Menu Studio page (/menu-studio): pick a layer (Global, a phase, or a theme inside it),
+ * then edit dish photos, names, prices and categories there. Save writes the layer's menu.json.
  */
-function MenuStudio({ onClose }: { onClose: () => void }) {
+export function MenuStudioPage() {
   const phase = useSim((s) => s.phase);
   const themeId = useThemeId();
   const [layer, setLayer] = useState<LayerKey>(() => {
@@ -63,57 +36,53 @@ function MenuStudio({ onClose }: { onClose: () => void }) {
   const [dishId, setDishId] = useState<string | null>(null);
   const view = useLayerView(layer);
 
+  // opened straight from the address bar: load the drafts and the phase/theme the devices show
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    void Promise.all([useMenuStore.persist.rehydrate(), useThemeChoice.persist.rehydrate()]).then(() => {
+      const { lastPhase } = useThemeChoice.getState();
+      if (lastPhase && lastPhase !== useSim.getState().phase) useSim.getState().setPhase(lastPhase);
+    });
+  }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-label="Menu Studio"
-        onClick={(e) => e.stopPropagation()}
-        className="flex h-full max-h-[900px] w-full max-w-[1320px] flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950 text-neutral-100 shadow-2xl shadow-black"
-      >
-        <StudioHeader layer={layer} onClose={onClose} />
+    <div className="flex h-dvh flex-col bg-neutral-950 text-neutral-100">
+      <StudioHeader layer={layer} />
 
-        <div className="flex min-h-0 flex-1">
-          <LayerTree layer={layer} onPick={setLayer} />
+      <div className="flex min-h-0 flex-1">
+        <LayerTree layer={layer} onPick={setLayer} />
 
-          <section className="flex min-h-0 w-[420px] shrink-0 flex-col border-r border-neutral-800">
-            <div className="flex gap-1 border-b border-neutral-800 px-4 py-3">
-              <button type="button" onClick={() => setTab("dishes")} className={btn(tab === "dishes")}>
-                Dishes
-              </button>
-              <button type="button" onClick={() => setTab("categories")} className={btn(tab === "categories")}>
-                Categories
-              </button>
-            </div>
-            {tab === "dishes" ? (
-              <DishList view={view} selected={dishId} onPick={setDishId} />
-            ) : (
-              <CategoryEditor
-                view={view}
-                onPickDish={(id) => {
-                  setDishId(id);
-                  setTab("dishes");
-                }}
-              />
-            )}
-          </section>
+        <section className="flex min-h-0 w-[440px] shrink-0 flex-col border-r border-white/10">
+          <div className="flex gap-1.5 border-b border-white/10 px-5 py-3">
+            <button type="button" onClick={() => setTab("dishes")} className={btn(tab === "dishes")}>
+              Dishes
+            </button>
+            <button type="button" onClick={() => setTab("categories")} className={btn(tab === "categories")}>
+              Categories
+            </button>
+          </div>
+          {tab === "dishes" ? (
+            <DishList view={view} selected={dishId} onPick={setDishId} />
+          ) : (
+            <CategoryEditor
+              view={view}
+              onPickDish={(id) => {
+                setDishId(id);
+                setTab("dishes");
+              }}
+            />
+          )}
+        </section>
 
-          <section className="min-h-0 flex-1 overflow-y-auto">
-            {dishId ? <DishEditor key={`${layer}:${dishId}`} view={view} dishId={dishId} /> : <Help view={view} />}
-          </section>
-        </div>
+        <section className="min-h-0 flex-1 overflow-y-auto">
+          {dishId ? <DishEditor key={`${layer}:${dishId}`} view={view} dishId={dishId} /> : <Help view={view} />}
+        </section>
       </div>
     </div>
   );
 }
 
-function StudioHeader({ layer, onClose }: { layer: LayerKey; onClose: () => void }) {
+/** Page header, as the changelog's: back button, title and what's being edited, then the save actions. */
+function StudioHeader({ layer }: { layer: LayerKey }) {
   const dirty = useMenuStore((s) => isDirty(s, layer));
   const stale = useMenuStore((s) => isStale(s, layer));
   const persistError = useMenuStore((s) => s.persistError);
@@ -135,24 +104,38 @@ function StudioHeader({ layer, onClose }: { layer: LayerKey; onClose: () => void
   };
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-neutral-800 px-5 py-3">
-      <div className="min-w-0">
-        <h2 className="text-sm font-semibold">Menu Studio</h2>
-        <p className="truncate font-mono text-[10px] text-neutral-500">
-          {STUDIO_MODE === "file"
-            ? `Editing ${layerPath(layer, folderOf)}`
-            : "Read-only deploy: edits are kept in this browser. Export a layer to commit it."}
+    <header className="flex shrink-0 items-center gap-5 border-b border-white/10 bg-neutral-950/80 px-6 py-5 backdrop-blur-xl">
+      <Link
+        href="/"
+        aria-label="Back to the prototype"
+        className={cn("flex size-11 shrink-0 items-center justify-center rounded-full text-neutral-100 transition hover:scale-105 active:scale-95", GLASS)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden>
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h1 className="text-[26px] leading-tight font-semibold tracking-tight text-white">Menu Studio</h1>
+        <p className="truncate text-sm text-neutral-400">
+          {STUDIO_MODE === "file" ? (
+            <>
+              Edit dish photos, names, prices and categories per layer. Editing{" "}
+              <code className="font-mono text-[13px] text-neutral-300">{layerPath(layer, folderOf)}</code>
+            </>
+          ) : (
+            "Read-only deploy: edits are kept in this browser. Export a layer to commit it."
+          )}
         </p>
         {stale ? (
-          <p className="text-[10px] text-amber-300">
+          <p className="text-[13px] text-amber-300">
             This file changed since the draft started. Saving overwrites it; Discard to take the file version.
           </p>
         ) : null}
-        {persistError ? <p className="text-[10px] text-red-400">{persistError}</p> : null}
+        {persistError ? <p className="text-[13px] text-red-400">{persistError}</p> : null}
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-2">
         {status ? (
-          <span className={cn("max-w-[360px] truncate text-[11px]", status.tone === "ok" ? "text-emerald-400" : "text-red-400")}>
+          <span className={cn("max-w-[320px] truncate text-[13px]", status.tone === "ok" ? "text-emerald-400" : "text-red-400")}>
             {status.text}
           </span>
         ) : null}
@@ -171,21 +154,21 @@ function StudioHeader({ layer, onClose }: { layer: LayerKey; onClose: () => void
               type="button"
               disabled={!allDirty.length || busy}
               onClick={() => save(allDirty)}
-              className="rounded-md bg-white px-3 py-1 text-[11px] font-semibold text-neutral-900 disabled:opacity-40"
+              className="h-9 rounded-lg bg-white px-3.5 text-[13px] font-semibold text-neutral-900 transition hover:bg-neutral-200 disabled:opacity-40"
             >
               Save all{allDirty.length ? ` (${allDirty.length})` : ""}
             </button>
           </>
         ) : null}
-        <button type="button" onClick={onClose} className={cn(btn(), "ml-2")} aria-label="Close">
-          ✕
-        </button>
       </div>
     </header>
   );
 }
 
-/** Left column: Global, then each phase with its themes nested under it. */
+/**
+ * Left column, grouped by hierarchy: the Global base, then each phase with its own
+ * overrides and its themes nested under a rail. Dots: on the devices now / unsaved.
+ */
 function LayerTree({ layer, onPick }: { layer: LayerKey; onPick: (key: LayerKey) => void }) {
   const drafts = useMenuStore((s) => s.drafts);
   const phase = useSim((s) => s.phase);
@@ -195,40 +178,70 @@ function LayerTree({ layer, onPick }: { layer: LayerKey; onPick: (key: LayerKey)
   const onDevices = layerKey(phase, themeId);
   const selected = LAYERS.find((l) => l.key === layer) ?? LAYERS[0];
 
+  const row = (l: (typeof LAYERS)[number], label: string, hint?: string) => {
+    const dirty = l.key === "global" ? !!drafts.global : !!drafts.patches[l.key];
+    const live = l.key === onDevices || (l.level === "phase" && l.phaseId === phase) || l.level === "global";
+    const on = l.key === layer;
+    return (
+      <button
+        type="button"
+        onClick={() => onPick(l.key)}
+        className={cn(
+          "flex h-10 w-full items-center gap-2.5 rounded-lg px-3 text-left text-sm transition",
+          on ? "bg-white/[0.1] text-white" : "text-neutral-400 hover:bg-white/[0.05] hover:text-neutral-100",
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate">
+          {label}
+          {hint ? <span className="ml-1.5 text-xs text-neutral-500">{hint}</span> : null}
+        </span>
+        {live ? <span title="Shown on the devices" className="size-1.5 shrink-0 rounded-full bg-sky-400" /> : null}
+        {dirty ? <span title="Unsaved edits" className="size-1.5 shrink-0 rounded-full bg-amber-400" /> : null}
+      </button>
+    );
+  };
+
+  const phases = LAYERS.filter((l) => l.level === "phase");
+
   return (
-    <nav className="flex w-[230px] shrink-0 flex-col border-r border-neutral-800">
-      <p className="px-4 pt-4 pb-2 text-[10px] font-semibold tracking-wider text-neutral-500 uppercase">Layer</p>
-      <ul className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2">
-        {LAYERS.map((l) => {
-          const dirty = l.key === "global" ? !!drafts.global : !!drafts.patches[l.key];
-          const live = l.key === onDevices || (l.level === "phase" && l.phaseId === phase) || l.level === "global";
+    <nav aria-label="Layers" className="flex w-[260px] shrink-0 flex-col border-r border-white/10">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 py-5">
+        <section className="flex flex-col gap-1.5">
+          <h2 className="px-3 text-[11px] font-semibold tracking-[0.1em] text-neutral-500 uppercase">Base</h2>
+          {row(LAYERS[0], "Global", "every dish")}
+        </section>
+        {phases.map((p) => {
+          const config = getPhase(p.phaseId!);
+          const themes = LAYERS.filter((l) => l.level === "theme" && l.phaseId === p.phaseId);
           return (
-            <li key={l.key}>
-              <button
-                type="button"
-                onClick={() => onPick(l.key)}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition",
-                  l.level === "phase" && "pl-4",
-                  l.level === "theme" && "pl-8",
-                  l.key === layer ? "bg-white/10 text-white" : "text-neutral-400 hover:bg-white/5 hover:text-neutral-200",
-                )}
-              >
-                <span className="min-w-0 flex-1 truncate">
-                  {l.level === "theme" ? getPhase(l.phaseId!).themes.find((t) => t.id === l.themeId)!.label : l.label}
+            <section key={p.key} className="flex flex-col gap-1.5">
+              <h2 className="flex items-center justify-between px-3 text-[11px] font-semibold tracking-[0.1em] text-neutral-500 uppercase">
+                {config.label}
+                <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-normal normal-case ring-1", config.tone)}>
+                  {config.chip}
                 </span>
-                {live ? <span title="Shown on the devices" className="size-1.5 rounded-full bg-sky-400" /> : null}
-                {dirty ? <span title="Unsaved edits" className="size-1.5 rounded-full bg-amber-400" /> : null}
-              </button>
-            </li>
+              </h2>
+              {row(p, "Phase overrides")}
+              {themes.length ? (
+                <ul className="ml-5 flex flex-col gap-0.5 border-l border-white/10 pl-2">
+                  {themes.map((t) => (
+                    <li key={t.key}>{row(t, config.themes.find((x) => x.id === t.themeId)!.label, "theme")}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
           );
         })}
-      </ul>
-      <div className="flex flex-col gap-2 border-t border-neutral-800 p-3 text-[10px] leading-snug text-neutral-500">
-        <p>
-          <span className="mr-1 inline-block size-1.5 rounded-full bg-sky-400" /> on the devices now
-          <span className="mr-1 ml-3 inline-block size-1.5 rounded-full bg-amber-400" /> unsaved
-        </p>
+      </div>
+      <div className="flex flex-col gap-3 border-t border-white/10 p-4 text-[13px] leading-snug text-neutral-400">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-sky-400" /> On the devices
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-amber-400" /> Unsaved
+          </span>
+        </div>
         {selected.phaseId && selected.key !== onDevices ? (
           <button
             type="button"
@@ -309,7 +322,7 @@ function DishList({ view, selected, onPick }: { view: LayerView; selected: strin
             ))}
         </div>
       </div>
-      <p className="px-4 pb-1 text-[10px] text-neutral-600">{rows.length} dishes</p>
+      <p className="px-4 pb-1 text-xs text-neutral-600">{rows.length} dishes</p>
       <ul className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3">
         {rows.map(({ dish, hidden, added, edited, uncategorised }) => (
           <li key={dish.id}>
@@ -323,11 +336,11 @@ function DishList({ view, selected, onPick }: { view: LayerView; selected: strin
               )}
             >
               <span className="relative size-9 shrink-0 overflow-hidden rounded-md bg-neutral-800">
-                <DishImage src={dish.image} alt={dish.name} sizes="36px" className="object-cover text-xs" />
+                <DishImage src={dish.image} alt={dish.name} sizes="36px" className="object-cover text-sm" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className={cn("block truncate text-xs text-neutral-100", hidden && "line-through")}>{dish.name}</span>
-                <span className="flex items-center gap-1.5 text-[10px] text-neutral-500">
+                <span className={cn("block truncate text-sm text-neutral-100", hidden && "line-through")}>{dish.name}</span>
+                <span className="flex items-center gap-1.5 text-xs text-neutral-500">
                   <span className="tabular-nums">{dish.price.toFixed(2)}</span>
                   {added ? <Badge tone="emerald">added here</Badge> : null}
                   {edited ? <Badge tone="amber">edited here</Badge> : null}
@@ -350,14 +363,14 @@ function Badge({ tone, children }: { tone: "emerald" | "amber" | "red" | "neutra
     red: "bg-red-500/15 text-red-300",
     neutral: "bg-neutral-500/15 text-neutral-400",
   };
-  return <span className={cn("rounded px-1 py-px text-[9px] font-semibold", tones[tone])}>{children}</span>;
+  return <span className={cn("rounded px-1 py-px text-[11px] font-semibold", tones[tone])}>{children}</span>;
 }
 
 /** Right column before a dish is picked: how layering works. */
 function Help({ view }: { view: LayerView }) {
   return (
-    <div className="flex max-w-[460px] flex-col gap-3 p-6 text-xs leading-relaxed text-neutral-400">
-      <h3 className="text-sm font-semibold text-neutral-100">How layers work</h3>
+    <div className="flex max-w-[460px] flex-col gap-3 p-6 text-sm leading-relaxed text-neutral-400">
+      <h3 className="text-[15px] font-semibold text-neutral-100">How layers work</h3>
       <p>
         <b className="text-neutral-200">Global</b> holds every dish and both category lists. A{" "}
         <b className="text-neutral-200">phase</b> changes only what differs for that phase, and a{" "}

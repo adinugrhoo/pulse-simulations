@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { figtree } from "@/lib/fonts";
-import { DishImage } from "@/menu/DishImage";
 import { useMenu } from "@/menu/hooks";
-import { imageUrl } from "@/menu/resolve";
+import { useScheduleState } from "@/menu/useSchedule";
 import type { Dish, ResolvedSubcategory, ResolvedTabletCategory } from "@/menu/types";
 import type { CartChoice, CartEdit, CartLine, PosChosen, SheetSnap } from "@/engine/types";
 import {
@@ -16,17 +15,21 @@ import {
   type ModifierOption,
 } from "@/config/global/modifiers";
 import { useSim } from "@/engine/store";
-import { useTokens } from "@/theme/hooks";
 import { currency } from "@/engine/types";
-
-const ASSET = "/figma/tablet-pos";
-
-/**
- * Look of the select-dish page, from the active theme's `tablet/tokens.ts`. Dark is the
- * original; Light (Figma 2821:17567) and Foodpanda (2821:17671) share one layout and
- * differ in accent and the order bucket tint.
- */
-const usePosTheme = () => useTokens("tablet").pos;
+import {
+  ASSET,
+  BucketLine,
+  DishCard,
+  DishRowCard,
+  FulfilledChip,
+  NoteDialog,
+  OptionCard,
+  PhotoOptionCard,
+  RequiredChip,
+  SummaryCard,
+  sgd,
+  usePosTheme,
+} from "./items";
 
 /** Hairline between page sections: the Figma svg on dark, a plain border on the light themes. */
 function Divider({ tone, className }: { tone: string | null; className: string }) {
@@ -37,111 +40,7 @@ function Divider({ tone, className }: { tone: string | null; className: string }
   );
 }
 
-/** Figma prints 75% / 4x on every recommendation card — there is no scoring model to read. */
-const MATCH_PCT = 75;
-const REORDER_COUNT = 4;
 const RECOMMENDATION_COUNT = 4;
-
-function DishCard({
-  dish,
-  inBucket,
-  showBadges,
-  onAdd,
-}: {
-  dish: Dish;
-  inBucket: number;
-  showBadges?: boolean;
-  onAdd: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onAdd}
-      className="relative flex h-[96px] w-[280px] items-start overflow-hidden rounded-xl border border-[#222] p-2.5 text-left transition hover:brightness-125"
-    >
-      <DishImage src={dish.image} alt={dish.name} sizes="280px" eager className="object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] from-[5.729%] to-[rgba(128,128,128,0)]" />
-
-      <div className="relative flex h-full flex-col items-start justify-between">
-        {showBadges ? (
-          <div className="flex items-start gap-0.5">
-            <span className="rounded bg-[#00abb6] p-[5px] text-[10px] leading-none font-medium whitespace-nowrap text-white">
-              {MATCH_PCT}% Match
-            </span>
-            <span className="rounded bg-[#6c31cf] p-[5px] text-[10px] leading-none font-medium whitespace-nowrap text-white">
-              {REORDER_COUNT}x Reorder
-            </span>
-          </div>
-        ) : (
-          <div className="h-[20px]" />
-        )}
-        <div className="flex flex-col items-start gap-1.5 leading-none text-white">
-          <p className="max-w-[236px] truncate text-sm font-semibold">
-            {dish.name}
-          </p>
-          <p className="text-xs">{`SGD ${dish.price.toFixed(2)}`}</p>
-        </div>
-      </div>
-
-      {inBucket > 0 ? (
-        <span className="absolute top-2.5 right-2.5 rounded-full bg-[#f5dfa8] px-2 py-1 text-[10px] leading-none font-bold text-[#1b1b1a]">
-          ×{inBucket}
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-/** Figma 2821:17812: the row card shown when a category is open — name and price bottom-left, photo right. */
-function DishRowCard({
-  dish,
-  inBucket,
-  onAdd,
-}: {
-  dish: Dish;
-  inBucket: number;
-  onAdd: () => void;
-}) {
-  const t = usePosTheme();
-  return (
-    <button
-      type="button"
-      onClick={onAdd}
-      className={cn(
-        "flex w-[280px] items-end justify-between gap-2 rounded-xl border p-2.5 text-left transition hover:brightness-110",
-        t.row,
-      )}
-    >
-      <div className="flex min-w-px flex-1 flex-col items-start gap-1.5 leading-none">
-        <p className="text-sm font-semibold">{dish.name}</p>
-        <p className="text-xs">{`SGD ${dish.price.toFixed(2)}`}</p>
-      </div>
-      <div className="relative size-[76px] shrink-0 overflow-hidden rounded-lg bg-white">
-        {dish.image ? (
-          <Image
-            src={imageUrl(dish.image)}
-            alt=""
-            fill
-            sizes="76px"
-            loading="eager"
-            unoptimized
-            className="object-cover"
-          />
-        ) : (
-          <span className="absolute inset-0 flex items-center justify-center bg-[#2b2b2b] text-2xl font-bold text-[#f5dfa8]">
-            {dish.name.slice(0, 1)}
-          </span>
-        )}
-        {inBucket > 0 ? (
-          <span className="absolute top-1 right-1 rounded-full bg-[#f5dfa8] px-1.5 py-1 text-[10px] leading-none font-bold text-[#1b1b1a]">
-            ×{inBucket}
-          </span>
-        ) : null}
-      </div>
-    </button>
-  );
-}
-
 /**
  * Figma 3124:186: the page a category with subcategories opens. Subcategory tiles on top,
  * the picked one's dishes below; the order bucket stays on the right. The close button
@@ -163,6 +62,7 @@ function SubcategoryPage({
   onPickDish: (dish: Dish) => void;
 }) {
   const t = usePosTheme();
+  const scheduleOf = useScheduleState();
   return (
     <div className="flex h-full w-[900px] shrink-0 flex-col">
       <div className={cn("relative h-[86px] shrink-0 border-b", t.header)}>
@@ -219,6 +119,7 @@ function SubcategoryPage({
               dish={dish}
               inBucket={qtyInBucket(dish.id)}
               onAdd={() => onPickDish(dish)}
+              unavailable={scheduleOf(dish)}
             />
           ))}
           {active.dishes.length === 0 ? (
@@ -254,12 +155,6 @@ function EmptyBucket() {
   );
 }
 
-const RequiredChip = () => (
-  <span className="rounded-md bg-[rgba(203,113,83,0.2)] px-2 py-1.5 text-xs leading-none font-semibold whitespace-nowrap text-[#cb7153]">
-    Required
-  </span>
-);
-
 /** Rotated 45° in the Figma export so the diagonal strokes land as a minus / plus. */
 function StepIcon({ src }: { src: string }) {
   return (
@@ -293,8 +188,6 @@ const optionLabel = (c: Chosen) => {
   return parts.length ? `${c.name} (${parts.join(", ")})` : c.name;
 };
 
-const sgd = (value: number) => `SGD ${value.toFixed(2)}`;
-
 /** Notes field, quantity stepper and the Save button: shared by the combo page and the option sheet. */
 function ModifierFooter({
   notesPlaceholder,
@@ -313,6 +206,7 @@ function ModifierFooter({
   canSave: boolean;
   onSave: () => void;
 }) {
+  const t = usePosTheme();
   return (
     <div className="flex shrink-0 flex-col gap-8 px-5 pb-5">
       <div className="flex flex-col gap-5">
@@ -359,174 +253,16 @@ function ModifierFooter({
         type="button"
         onClick={onSave}
         disabled={!canSave}
+        // same main-action look as Confirm Order, enabled and disabled
         className={cn(
-          "flex h-14 w-full items-center justify-center rounded-xl border p-4 transition",
-          canSave
-            ? "border-[#e8bc6b] text-white hover:brightness-110"
-            : "border-transparent bg-[#383736] text-[#838383]",
+          "flex h-14 w-full items-center justify-center rounded-xl p-4 transition",
+          canSave ? cn(t.confirmOn, "hover:brightness-110") : t.confirmOff,
         )}
-        style={
-          canSave
-            ? {
-                backgroundImage:
-                  "linear-gradient(84.68deg, rgb(170, 127, 30) 0%, rgb(144, 105, 14) 52.022%, rgb(170, 130, 37) 99.777%)",
-              }
-            : undefined
-        }
       >
         <span className="text-base leading-none font-bold whitespace-nowrap">
           Save Modifier
         </span>
       </button>
-    </div>
-  );
-}
-
-const FulfilledChip = () => (
-  <span className="flex items-center justify-center gap-1 rounded-md bg-[rgba(55,119,77,0.4)] px-2 py-1.5 text-xs leading-none font-semibold whitespace-nowrap text-[#8eecae]">
-    <Image
-      src={`${ASSET}/check-small.svg`}
-      alt=""
-      width={12}
-      height={12}
-      className="size-3"
-    />
-    Fulfilled
-  </span>
-);
-
-/** `qty` set means a stackable pick: shows ×N and `onRemove` steps it down (the pick leaves at 0). */
-type SummaryPill = {
-  key: string;
-  name: string;
-  detail?: string;
-  qty?: number;
-  onRemove?: () => void;
-  /** Stackable picks also get a + next to the count. */
-  onAdd?: () => void;
-};
-
-/**
- * Right-hand summary card (Figma 2842:583): the group label, a Required / Fulfilled status
- * and a pill per pick. Pills with `onRemove` carry an x that clears that pick. `children`
- * holds richer content, like the combo page's picked-item detail.
- */
-function SummaryCard({
-  label,
-  status,
-  pills = [],
-  onClick,
-  children,
-}: {
-  label: string;
-  status: "required" | "fulfilled" | "none";
-  pills?: SummaryPill[];
-  onClick?: () => void;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div
-      onClick={onClick}
-      className={cn(
-        "flex w-full shrink-0 flex-col gap-3 rounded-xl border border-[#222] bg-[#191919] p-3.5",
-        onClick && "cursor-pointer",
-      )}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <p className="min-w-px flex-1 text-base leading-tight font-semibold text-[#fff8eb]">
-          {label}
-        </p>
-        {status === "required" ? (
-          <RequiredChip />
-        ) : status === "fulfilled" ? (
-          <FulfilledChip />
-        ) : null}
-      </div>
-      {pills.length ? (
-        <div className="flex flex-wrap items-start gap-1.5">
-          {pills.map((pill) =>
-            pill.qty !== undefined ? (
-              <div
-                key={pill.key}
-                className="flex min-h-9 items-center gap-2 rounded-full bg-[#222] py-1 pr-1 pl-3 text-sm leading-none text-[#bdbdbd]"
-              >
-                <span className="leading-tight">
-                  <span className="font-semibold">{pill.name}</span>
-                  {pill.detail ? ` (${pill.detail})` : ""}
-                </span>
-                <div className="flex items-center gap-1 rounded-full bg-[#2c2c2c] p-0.5">
-                  <button
-                    type="button"
-                    aria-label={`Decrease ${pill.name}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      pill.onRemove?.();
-                    }}
-                    disabled={!pill.onRemove}
-                    className="flex size-7 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-90"
-                  >
-                    <span className="h-[1.5px] w-2.5 rounded-full bg-[#cdcdcd]" />
-                  </button>
-                  <span
-                    key={pill.qty}
-                    className="animate-count-pop min-w-5 text-center text-sm font-bold text-[#fff8eb] tabular-nums"
-                  >
-                    {pill.qty}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={`Increase ${pill.name}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      pill.onAdd?.();
-                    }}
-                    disabled={!pill.onAdd}
-                    className="flex size-7 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-90"
-                  >
-                    <span className="relative size-2.5">
-                      <span className="absolute top-1/2 left-0 h-[1.5px] w-2.5 -translate-y-1/2 rounded-full bg-[#cdcdcd]" />
-                      <span className="absolute top-0 left-1/2 h-2.5 w-[1.5px] -translate-x-1/2 rounded-full bg-[#cdcdcd]" />
-                    </span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                key={pill.key}
-                className={cn(
-                  "flex min-h-8 items-center justify-center gap-1.5 rounded-full bg-[#222] py-2 text-sm leading-none text-[#bdbdbd]",
-                  pill.onRemove ? "pr-2 pl-3" : "px-3",
-                )}
-              >
-                <span className="leading-tight">
-                  <span className="font-semibold">{pill.name}</span>
-                  {pill.detail ? ` (${pill.detail})` : ""}
-                </span>
-                {pill.onRemove ? (
-                  <button
-                    type="button"
-                    aria-label={`Remove ${pill.name}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      pill.onRemove?.();
-                    }}
-                    className="flex size-3 shrink-0 items-center justify-center"
-                  >
-                    <Image
-                      src={`${ASSET}/remove-small.svg`}
-                      alt=""
-                      width={12}
-                      height={12}
-                      className="size-3"
-                    />
-                  </button>
-                ) : null}
-              </div>
-            ),
-          )}
-        </div>
-      ) : null}
-      {children}
     </div>
   );
 }
@@ -556,122 +292,6 @@ function ChosenDetail({ chosen }: { chosen: Chosen }) {
         </div>
       ) : null}
     </div>
-  );
-}
-
-/** A selectable option: name and price bottom-left, optional photo on the right. */
-function OptionCard({
-  option,
-  priceStyle = "full",
-  compact = false,
-  selected,
-  count,
-  onDecrement,
-  onClick,
-}: {
-  option: ModifierOption;
-  priceStyle?: "full" | "addon";
-  /** Small 164px tile, same footprint as the plain Hot / Iced picks. For options without a photo. */
-  compact?: boolean;
-  selected: boolean;
-  /** Stack count for add-ons: every tap adds one and the badge top-right keeps the tally. */
-  count?: number;
-  /** Tapping the count badge takes one back off (the pick leaves at 0). */
-  onDecrement?: () => void;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "relative flex items-end justify-between gap-2 rounded-xl border bg-[#191919] text-left transition hover:brightness-125 active:scale-[0.98]",
-        compact ? "h-[100px] w-[164px] p-3" : "h-[98px] w-[280px] p-2.5",
-        selected ? "border-[#f5dfa8]" : "border-[#222]",
-      )}
-    >
-      <div className="flex min-w-px flex-1 flex-col items-start gap-2 leading-none text-[#fff8eb]">
-        <p className="text-base leading-tight font-semibold">{option.name}</p>
-        <p className="text-sm text-[#cdcdcd]">
-          {priceStyle === "addon" ? "+" : ""}
-          {sgd(option.price)}
-        </p>
-      </div>
-      {count ? (
-        // a span, not a button: it sits inside the card's own <button>
-        <span
-          key={count}
-          role="button"
-          tabIndex={0}
-          aria-label={`Decrease ${option.name}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDecrement?.();
-          }}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter" && e.key !== " ") return;
-            e.preventDefault();
-            e.stopPropagation();
-            onDecrement?.();
-          }}
-          className="animate-count-pop absolute top-2 right-2 z-10 flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-full bg-[#f5dfa8] px-2 text-sm leading-none font-bold text-[#1b1b1a] tabular-nums shadow-[0_2px_6px_rgba(0,0,0,0.4)] transition hover:brightness-90 active:scale-90"
-        >
-          {count}
-        </span>
-      ) : null}
-      {option.image ? (
-        <div className="relative size-[76px] shrink-0 overflow-hidden rounded-lg bg-white">
-          <Image
-            src={option.image}
-            alt=""
-            fill
-            sizes="76px"
-            loading="eager"
-            unoptimized
-            className="object-cover"
-          />
-        </div>
-      ) : null}
-    </button>
-  );
-}
-
-/** Figma 2854:207: an option whose photo fills the whole card, name and price over a dark fade. */
-function PhotoOptionCard({
-  option,
-  selected,
-  onClick,
-}: {
-  option: ModifierOption;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "relative flex h-[96px] w-[280px] items-end overflow-hidden rounded-xl p-2.5 text-left transition hover:brightness-125",
-        selected && "ring-2 ring-[#f5dfa8]",
-      )}
-    >
-      <Image
-        src={option.image!}
-        alt=""
-        fill
-        sizes="280px"
-        loading="eager"
-        unoptimized
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] from-[5.729%] to-[rgba(128,128,128,0)]" />
-      <div className="relative flex flex-col items-start gap-1.5 leading-none text-[#fff8eb]">
-        <p className="max-w-[250px] truncate text-sm font-semibold">
-          {option.name}
-        </p>
-        <p className="text-xs">{sgd(option.price)}</p>
-      </div>
-    </button>
   );
 }
 
@@ -725,7 +345,7 @@ function OptionSheet({
     });
     return start;
   });
-  /** Stack count per pick in "multiple" groups (add-ons), keyed `${groupId}:${optionId}`; no upper limit. */
+  /** Stack count per pick in "multiple" groups (add-ons), keyed `${groupId}:${optionId}`; capped by the group's `max`. */
   const [counts, setCounts] = useState<Record<string, number>>(initial?.counts ?? {});
   const [qty, setQty] = useState(initial?.qty ?? 1);
   const [notes, setNotes] = useState(initial?.notes ?? "");
@@ -737,6 +357,11 @@ function OptionSheet({
   const pickerGroups = groups.filter((g) => g.layout !== "hidden");
 
   const picked = (g: ModifierGroup) => picks[g.id] ?? [];
+  /** Picks counted against a group's `max`, stacks included. */
+  const usedOf = (g: ModifierGroup) => picked(g).reduce((n, o) => n + countOf(g, o), 0);
+  const isFull = (g: ModifierGroup) => g.max !== undefined && usedOf(g) >= g.max;
+  /** Blocked adds per group: each one replays the summary card's nudge. */
+  const [nudges, setNudges] = useState<Record<string, number>>({});
   const complete = groups.every((g) => g.optional || picked(g).length > 0);
   const close = () => {
     setShow(false);
@@ -779,6 +404,11 @@ function OptionSheet({
 
   /** Picking an option can reveal groups (Iced -> ice level, preset to its default) or hide ones whose trigger is gone. */
   const choose = (group: ModifierGroup, o: ModifierOption) => {
+    if (group.multiple && isFull(group)) {
+      // the summary card explains why; no snackbar
+      setNudges((prev) => ({ ...prev, [group.id]: (prev[group.id] ?? 0) + 1 }));
+      return;
+    }
     if (group.multiple) {
       const already = (picks[group.id] ?? []).some((c) => c.id === o.id);
       if (already) {
@@ -852,7 +482,7 @@ function OptionSheet({
           </button>
           <div className="absolute top-0 left-[81px] flex h-[86px] w-fit min-w-[120px] max-w-[620px] flex-col items-center justify-between pb-[33px]">
             <div className="h-0.5 w-full rounded-full bg-[#f5dfa8]" />
-            <p className="max-w-full truncate px-3 text-xl leading-none font-bold whitespace-nowrap text-[#fff8eb]">
+            <p className="max-w-full truncate px-3 text-xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">
               {option.customisation!.title}
             </p>
           </div>
@@ -931,6 +561,7 @@ function OptionSheet({
                           }
                           onDecrement={() => remove(g, o)}
                           onClick={() => choose(g, o)}
+                          groupFull={g.multiple && isFull(g)}
                         />
                       ))}
                     </div>
@@ -950,6 +581,7 @@ function OptionSheet({
                           }
                           onDecrement={() => remove(g, o)}
                           onClick={() => choose(g, o)}
+                          groupFull={g.multiple && isFull(g)}
                         />
                       ))}
                     </div>
@@ -963,7 +595,7 @@ function OptionSheet({
 
       <div className="flex h-full w-[380px] shrink-0 flex-col bg-[#131313]">
         <div className="flex h-[86px] shrink-0 items-center px-4">
-          <p className="text-xl leading-none font-bold whitespace-nowrap text-[#fff8eb]">
+          <p className="text-xl leading-none font-bold whitespace-nowrap text-[#fcdfa2]">
             Modifier
           </p>
         </div>
@@ -991,6 +623,8 @@ function OptionSheet({
                   onRemove: removable ? () => remove(g, o) : undefined,
                   onAdd: g.multiple ? () => choose(g, o) : undefined,
                 }))}
+                limit={g.multiple && g.max !== undefined ? { used: usedOf(g), max: g.max } : undefined}
+                nudge={nudges[g.id]}
               />
             );
           })}
@@ -1095,7 +729,7 @@ function ComboScreen({
       <p
         className={cn(
           "max-w-full truncate text-xl leading-none font-bold whitespace-nowrap",
-          current ? "text-[#fff8eb]" : "text-[#595959]",
+          current ? "text-[#fcdfa2]" : "text-[#595959]",
         )}
       >
         {text}
@@ -1260,277 +894,15 @@ function ComboScreen({
  * and the Pulse recommendation strip; right: the order bucket, which is the live
  * `waiter.cart`. Confirm Order submits it and drops back to the open table dialog.
  */
-/** Width the delete action rests at once a line is swiped open. */
-const REVEAL = 104;
-/** Share of the card width past which letting go deletes straight away. */
-const FULL_SWIPE = 0.6;
-/** Bucket column (380) minus its side padding. */
-const LINE_WIDTH = 340;
-const SNAP = "transform 380ms cubic-bezier(0.34, 1.32, 0.64, 1)";
-
-const TrashIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-    <path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
-  </svg>
-);
-
-const PencilIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-    <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4zM13.5 6.5l4 4" />
-  </svg>
-);
-
-/**
- * One order bucket line. Swipe left to reveal "Remove all"; swipe far enough and let go to
- * delete outright. Vertical drags still scroll the bucket.
- */
-function BucketLine({
-  line,
-  open,
-  onOpen,
-  onClose,
-  onTouch,
-  onEdit,
-  onIncrement,
-  onDecrement,
-  onRemove,
-}: {
-  line: CartLine;
-  open: boolean;
-  onOpen: () => void;
-  onClose: () => void;
-  /** Any touch on this line closes whichever other line is open. */
-  onTouch: () => void;
-  /** Tap on the card body; only passed for lines that have modifiers or a combo to change. */
-  onEdit?: () => void;
-  onIncrement: () => void;
-  onDecrement: () => void;
-  onRemove: () => void;
-}) {
-  const t = usePosTheme();
-  const drag = useRef<{
-    x: number;
-    y: number;
-    base: number;
-    axis: "x" | "y" | null;
-    lastX: number;
-    lastT: number;
-    v: number;
-  } | null>(null);
-  const moved = useRef(false);
-  const [dragX, setDragX] = useState<number | null>(null);
-  const [phase, setPhase] = useState<"idle" | "leaving" | "collapsing">("idle");
-
-  const offset = phase !== "idle" ? -LINE_WIDTH - 24 : (dragX ?? (open ? -REVEAL : 0));
-  const pull = Math.max(0, -offset);
-  const armed = dragX !== null && pull > LINE_WIDTH * FULL_SWIPE;
-
-  const remove = () => {
-    if (phase !== "idle") return;
-    setDragX(null);
-    setPhase("leaving");
-    setTimeout(() => setPhase("collapsing"), 220);
-    setTimeout(onRemove, 460);
-  };
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (phase !== "idle") return;
-    onTouch();
-    moved.current = false;
-    drag.current = { x: e.clientX, y: e.clientY, base: open ? -REVEAL : 0, axis: null, lastX: e.clientX, lastT: e.timeStamp, v: 0 };
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    const d = drag.current;
-    if (!d) return;
-    const dx = e.clientX - d.x;
-    const dy = e.clientY - d.y;
-    if (!d.axis) {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-      if (d.axis === "x") {
-        moved.current = true;
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      }
-    }
-    if (d.axis !== "x") return;
-    const dt = Math.max(1, e.timeStamp - d.lastT);
-    d.v = (e.clientX - d.lastX) / dt;
-    d.lastX = e.clientX;
-    d.lastT = e.timeStamp;
-    const raw = d.base + dx;
-    // rubber-band past the closed edge and the far edge
-    const max = LINE_WIDTH;
-    setDragX(raw > 0 ? raw * 0.2 : raw < -max ? -max + (raw + max) * 0.2 : raw);
-  };
-  const onPointerUp = () => {
-    const d = drag.current;
-    drag.current = null;
-    if (!d || d.axis !== "x" || dragX === null) return;
-    if (armed) return remove();
-    setDragX(null);
-    if (d.v < -0.4 || (d.v <= 0.4 && dragX < -REVEAL / 2)) onOpen();
-    else onClose();
-  };
-
-  const progress = Math.min(1, pull / REVEAL);
-
-  return (
-    <li
-      className={cn(
-        "grid transition-[grid-template-rows,opacity] duration-[240ms] ease-out",
-        phase === "collapsing" ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100",
-      )}
-    >
-      <div className="min-h-0 overflow-hidden">
-        <div className="relative mb-3">
-          {/* delete action, sits under the card and grows with the drag */}
-          <button
-            type="button"
-            aria-label={`Remove all ${line.name}`}
-            tabIndex={open ? 0 : -1}
-            onClick={remove}
-            className="absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 overflow-hidden rounded-xl bg-[#e5484d] text-white"
-            style={{
-              width: Math.max(REVEAL - 8, pull - 8),
-              opacity: progress,
-              transition: dragX === null ? "width 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms" : undefined,
-            }}
-          >
-            <span
-              className="flex flex-col items-center gap-1 transition-transform duration-200"
-              style={{ transform: `scale(${armed ? 1.15 : 0.7 + progress * 0.3})` }}
-            >
-              <TrashIcon className="size-5" />
-              <span className="text-xs leading-none font-semibold whitespace-nowrap">
-                {armed ? "Release" : "Remove all"}
-              </span>
-            </span>
-          </button>
-
-          <div
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            onClickCapture={(e) => {
-              if (moved.current) {
-                e.stopPropagation();
-                e.preventDefault();
-                moved.current = false;
-              } else if (open) {
-                e.stopPropagation();
-                onClose();
-              } else if (onEdit && !(e.target as HTMLElement).closest("button")) {
-                onEdit();
-              }
-            }}
-            className={cn(
-              "relative flex touch-pan-y flex-col gap-3 rounded-xl border p-3.5 select-none",
-              onEdit && "cursor-pointer hover:brightness-110 active:brightness-95",
-              t.line,
-            )}
-            style={{
-              transform: `translateX(${offset}px)`,
-              transition: dragX === null ? (phase === "leaving" ? "transform 220ms ease-in" : SNAP) : undefined,
-            }}
-          >
-            <div className="flex w-full flex-col gap-2">
-              <div className="flex items-start justify-between gap-2">
-                <p className={cn("text-base leading-tight font-semibold", t.ink)}>{line.name}</p>
-                {onEdit ? (
-                  <span className={cn("flex shrink-0 items-center gap-1 text-xs leading-none font-medium", t.meta)}>
-                    <PencilIcon className="size-3.5" />
-                    Edit
-                  </span>
-                ) : null}
-              </div>
-              {line.choices ? (
-                <div className="flex flex-col gap-2">
-                  {line.choices.map((c, i) => (
-                    <div key={i} className="flex flex-col gap-1">
-                      {c.name ? (
-                        <p className={cn("text-sm leading-tight font-medium", t.sub)}>
-                          {c.label ? <span className={cn("font-normal", t.meta)}>{c.label}: </span> : null}
-                          {c.qty > 1 ? `${c.qty}x ` : ""}
-                          {c.name}
-                        </p>
-                      ) : null}
-                      {c.mods.map((m) => (
-                        <p key={m.name} className={cn("text-[13px] leading-tight", t.meta, c.name && "pl-3")}>
-                          {m.qty > 1 ? `${m.qty}x ` : ""}
-                          {m.name}
-                        </p>
-                      ))}
-                      {c.notes ? (
-                        <p className={cn("text-[13px] leading-tight italic", t.meta, c.name && "pl-3")}>
-                          “{c.notes}”
-                        </p>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              {line.notes ? (
-                <p className={cn("text-[13px] leading-tight italic", t.meta)}>“{line.notes}”</p>
-              ) : null}
-            </div>
-
-            <div className="flex w-full items-center justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <p className={cn("text-base leading-none font-bold tabular-nums", t.ink)}>
-                  {currency(line.unitPrice * line.qty)}
-                </p>
-                {line.qty > 1 ? (
-                  <p className={cn("text-xs leading-none tabular-nums", t.meta)}>
-                    {currency(line.unitPrice)} each
-                  </p>
-                ) : null}
-              </div>
-              <div className={cn("flex items-center gap-1 rounded-full p-0.5", t.stepWrap)}>
-                <button
-                  type="button"
-                  aria-label={line.qty > 1 ? `Remove one ${line.name}` : `Remove ${line.name}`}
-                  onClick={line.qty > 1 ? onDecrement : remove}
-                  className={cn("flex size-8 items-center justify-center rounded-full transition active:scale-90", t.stepBtn)}
-                >
-                  {line.qty > 1 ? (
-                    <span className="h-[1.5px] w-3 rounded-full bg-current" />
-                  ) : (
-                    <TrashIcon className="size-4" />
-                  )}
-                </button>
-                <span
-                  key={line.qty}
-                  className={cn("animate-count-pop min-w-6 text-center text-base leading-none font-bold tabular-nums", t.ink)}
-                >
-                  {line.qty}
-                </span>
-                <button
-                  type="button"
-                  aria-label={`Add one ${line.name}`}
-                  onClick={onIncrement}
-                  className={cn("flex size-8 items-center justify-center rounded-full transition active:scale-90", t.stepBtn)}
-                >
-                  <span className="relative size-3">
-                    <span className="absolute top-1/2 left-0 h-[1.5px] w-3 -translate-y-1/2 rounded-full bg-current" />
-                    <span className="absolute top-0 left-1/2 h-3 w-[1.5px] -translate-x-1/2 rounded-full bg-current" />
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </li>
-  );
-}
-
 export function PosOrderScreen() {
   const dispatch = useSim((s) => s.dispatch);
+  const scheduleOf = useScheduleState();
   const tableId = useSim(
     (s) => s.waiter.openTableId ?? s.waiter.selectedTableId,
   );
   const cart = useSim((s) => s.waiter.cart);
+  /** Bucket line whose note dialog is open; in the sim store so a scenario step can open it. */
+  const noteLine = useSim((s) => s.waiter.cart.find((l) => l.lineId === s.waiter.noteLineId));
   /** Open category (and subcategory) live in the store so scenario steps can drive them. */
   const pos = useSim((s) => s.waiter.pos);
   const activeCategory = pos?.categoryId ?? null;
@@ -1778,6 +1150,7 @@ export function PosOrderScreen() {
                   dish={dish}
                   inBucket={qtyInBucket(dish.id)}
                   onAdd={() => pickDish(dish)}
+                  unavailable={scheduleOf(dish)}
                 />
               ))}
               {query.trim() && searchResults.length === 0 ? (
@@ -1818,6 +1191,12 @@ export function PosOrderScreen() {
                     dish={dish}
                     inBucket={qtyInBucket(dish.id)}
                     onAdd={() => pickDish(dish)}
+                    unavailable={scheduleOf(dish)}
+                    // in the sim store so a scenario step can open it
+                    infoOpen={pos?.scheduleDishId === dish.id}
+                    onInfoOpenChange={(open) =>
+                      dispatch({ type: "waiter/pos-schedule-info", dishId: open ? dish.id : null })
+                    }
                   />
                 ))}
               </div>
@@ -1853,6 +1232,7 @@ export function PosOrderScreen() {
                 inBucket={qtyInBucket(dish.id)}
                 showBadges
                 onAdd={() => pickDish(dish)}
+                unavailable={scheduleOf(dish)}
               />
             ))}
           </div>
@@ -1882,7 +1262,7 @@ export function PosOrderScreen() {
       {/* ----------------------------- order bucket ----------------------------- */}
       <div className={cn("flex h-full w-[380px] shrink-0 flex-col", t.bucket)}>
         <div className="flex h-[86px] shrink-0 items-center px-4">
-          <p className={cn("text-xl leading-none font-bold whitespace-nowrap", t.ink)}>
+          <p className={cn("text-xl leading-none font-bold whitespace-nowrap", t.title)}>
             Order Bucket
           </p>
         </div>
@@ -1901,6 +1281,8 @@ export function PosOrderScreen() {
                   onClose={() => setOpenLineId((id) => (id === line.lineId ? null : id))}
                   onTouch={() => setOpenLineId((id) => (id === line.lineId ? id : null))}
                   onEdit={line.edit && editableDish(line) ? () => startEdit(line) : undefined}
+                  // plain dishes skip the modifier page and its notes field
+                  onNote={line.edit ? undefined : () => dispatch({ type: "waiter/open-line-note", lineId: line.lineId })}
                   onIncrement={() => dispatch({ type: "waiter/increment-cart-line", lineId: line.lineId })}
                   onDecrement={() => dispatch({ type: "waiter/decrement-cart-line", lineId: line.lineId })}
                   onRemove={() => dispatch({ type: "waiter/remove-cart-line", lineId: line.lineId })}
@@ -1949,6 +1331,17 @@ export function PosOrderScreen() {
             setEditLine(null);
           }}
           onSave={(chosen) => saveSheet(sheetDish, chosen)}
+        />
+      ) : null}
+
+      {noteLine ? (
+        <NoteDialog
+          key={noteLine.lineId}
+          dishName={noteLine.name}
+          qty={noteLine.qty}
+          initial={noteLine.notes}
+          onSave={(notes) => dispatch({ type: "waiter/set-line-note", lineId: noteLine.lineId, notes })}
+          onCancel={() => dispatch({ type: "waiter/open-line-note", lineId: null })}
         />
       ) : null}
     </div>

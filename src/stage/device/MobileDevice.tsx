@@ -29,7 +29,6 @@ export function MobileDevice() {
   const terminalScreen = useSim((s) => s.terminal.screen);
   const TerminalScreen = TERMINAL_SCREENS[terminalScreen];
   const screen = useSim((s) => s.screens.mobile);
-  const cartCount = useSim((s) => s.customer.cart.reduce((n, l) => n + l.qty, 0));
   const theme = useThemeConfig();
   const Screen = registryFor("mobile", phase, theme.id)[screen];
 
@@ -37,12 +36,6 @@ export function MobileDevice() {
     <DeviceFrame
       spec={terminal ? DEVICES.terminal : DEVICES.mobile}
       style={mobileCssVars(theme.mobile.tokens)}
-      badge={
-        <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-300">
-          {terminal ? terminalScreen : screen}
-          {!terminal && cartCount ? ` · cart ${cartCount}` : ""}
-        </span>
-      }
     >
       {terminal ? (
         <TerminalScreen />

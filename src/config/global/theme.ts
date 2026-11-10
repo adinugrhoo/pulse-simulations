@@ -19,9 +19,10 @@ export const DEFAULT_POS_TOKENS: PosTokens = {
   iconInv: "",
   searchLine: "border-[#f5dfa8]",
   tab: "bg-[#f5dfa8]",
-  title: "text-[#fff8eb]",
+  // Pulse gold, as Table Detail's "Guest list" title
+  title: "text-[#fcdfa2]",
   crumb: "text-[#595959]",
-  ring: "ring-2 ring-white ring-offset-2 ring-offset-[#151515]",
+  ring: "ring-2 ring-[#f5dfa8] ring-offset-2 ring-offset-[#151515]",
   divider: null,
   reco: "text-[#f5dfa8]",
   sparkle: "sparkle.svg",
@@ -32,7 +33,14 @@ export const DEFAULT_POS_TOKENS: PosTokens = {
   sub: "text-[#cdcdcd]",
   stepWrap: "bg-[#222]",
   stepBtn: "text-[#cdcdcd] hover:bg-white/10",
-  confirmOn: "bg-[#f5dfa8] text-[#1b1b1a]",
-  confirmOff: "bg-[#383736] text-[#676665]",
+  // Table Detail's Pay Bill (Figma GRAD_PAY) and its disabled buttons
+  confirmOn:
+    "border border-[#e8bc6b] bg-[linear-gradient(85.8deg,#aa7f1e_0%,#90690e_52%,#aa8225_99.8%)] text-[#ffffef]",
+  confirmOff: "border border-transparent bg-[#3a3a3a] text-[#939393]",
+  secondary:
+    "border border-[#e8bc6b] bg-[linear-gradient(86.6deg,rgba(170,127,30,0.3)_0%,rgba(144,105,14,0.3)_52%,rgba(170,130,37,0.3)_99.8%)] text-[#fff8eb]",
+  outline: "border border-[#6e5e41] bg-[#1b1b1b] text-[#fff8eb]",
   row: "border-[#222] bg-[#191919] text-[#fff8eb]",
+  muted: "text-[#6b6b6b]",
+  warn: "text-[#f5d58a]",
 };
