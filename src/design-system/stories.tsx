@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
 import type { ModifierOption } from "@/config/global/modifiers";
 import type { CartChoice, CartLine } from "@/engine/types";
 import { formatUnavailable, scheduleState, type ScheduleRule } from "@/menu/schedule";
@@ -10,11 +11,13 @@ import {
   BucketLine,
   DishCard,
   DishRowCard,
+  EmptyState,
   OptionCard,
   NoteDialog,
   PhotoOptionCard,
   SummaryCard,
   sgd,
+  usePosTheme,
   type Availability,
   type SummaryPill,
 } from "@/screens/tablet/pos/items";
@@ -883,6 +886,59 @@ const actionButton: Story = {
   },
 };
 
+/* -------------------------------- empty state ------------------------------- */
+
+/** The list the empty state fills: the bucket column or the dish list, on its own tint. */
+function EmptyFrame({ kind }: { kind: "bucket" | "items" }) {
+  const t = usePosTheme();
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-xl",
+        kind === "bucket" ? cn("h-[320px] w-[340px]", t.bucket) : cn("h-[420px] w-[560px]", t.page),
+      )}
+    >
+      <EmptyState kind={kind} />
+    </div>
+  );
+}
+
+const emptyState: Story = {
+  id: "empty-state",
+  name: "Empty State",
+  group: "Empty state",
+  placements: [
+    ["Native ordering", "POS order page", "Order Bucket"],
+    ["Native ordering", "POS order page", "Category dish list"],
+  ],
+  usage:
+    "Shown when a list has nothing to show. Order bucket: nothing added yet. Item list: the API or menu data returns no items. Same 42px gap and 14px copy. Order bucket: 107×115 glow. Item list sits in the wider select-dish area, so its illustration and glow are 2× (214×230).",
+  themed: true,
+  surface: "page",
+  controls: [
+    {
+      key: "kind",
+      label: "List",
+      type: "segment",
+      options: [
+        { value: "bucket", label: "Order bucket" },
+        { value: "items", label: "Item list" },
+      ],
+      hint: "Item list: the select-dish area when the API or menu data lists no dishes.",
+    },
+  ],
+  defaults: { kind: "bucket" },
+  useCases: [
+    { name: "Order bucket", note: "Nothing added yet: \u201cNo items for now\u201d.", args: {} },
+    {
+      name: "Item list, no items",
+      note: "API or menu data lists no dishes: \u201cItem unavailable for now\u201d.",
+      args: { kind: "items" },
+    },
+  ],
+  render: (args) => <EmptyFrame kind={args.kind as "bucket" | "items"} />,
+};
+
 /** Every story, in nav order. Dish-based stories need the resolved menu for their options. */
 export const buildStories = (dishes: Dish[]): Story[] => [
   actionButton,
@@ -893,4 +949,5 @@ export const buildStories = (dishes: Dish[]): Story[] => [
   optionCard,
   photoOptionCard,
   summaryCard,
+  emptyState,
 ];
