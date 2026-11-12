@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { DEFAULT_POS_TOKENS } from "@/config/global/theme";
 import { scheduleState } from "@/menu/schedule";
-import { BucketLine, DishRowCard, NoteDialog, OptionCard, SummaryCard } from "@/screens/tablet/pos/items";
+import { BucketLine, DishRowCard, EmptyState, NoteDialog, OptionCard, SummaryCard } from "@/screens/tablet/pos/items";
 
 /**
  * Product changelog for the Pulse app (waiter tablet POS), the customer mobile and the
@@ -129,6 +129,34 @@ const FullOption = () => (
 /* ------------------------------------ entries ----------------------------------- */
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "v0.7.0",
+    date: "2026-11-12",
+    status: "unreleased",
+    title: "Empty dish list",
+    summary:
+      "Native ordering on the Pulse app no longer shows a blank page when the API or menu data lists no dishes: Select Dish shows an empty state with \u201cItem unavailable for now\u201d.",
+    source: { label: "Branch", value: "add/empty-state" },
+    scope: { phase: "Phase 2.0", theme: "Dark (Pulse), Light, Foodpanda", payment: "—", qr: "—" },
+    changes: [
+      { kind: "added", area: "POS", text: "No dishes from the API or menu data: the category grid and Pulse Dish Recommendation give way to an empty state, \u201cItem unavailable for now\u201d." },
+      { kind: "added", area: "POS", text: "An open category or subcategory with no dishes shows the same empty state under the grid; the order bucket keeps its lines." },
+      { kind: "changed", area: "POS", text: "An empty subcategory used to say \u201cNo dishes in \u2026 yet.\u201d; it now shows the empty state." },
+    ],
+    design: [
+      {
+        component: "Empty state, item list",
+        where: "POS: Select Dish, category and subcategory lists",
+        note: "New. Same pattern as the empty Order Bucket (glow, 42px gap, 14px copy), with the illustration and glow at 2\u00d7 for the wider Select Dish area.",
+        after: (
+          <div className={`h-[420px] w-[560px] overflow-hidden rounded-xl ${t.page}`}>
+            <EmptyState kind="items" />
+          </div>
+        ),
+        story: "empty-state",
+      },
+    ],
+  },
   {
     version: "v0.6.0",
     date: "2026-11-10",

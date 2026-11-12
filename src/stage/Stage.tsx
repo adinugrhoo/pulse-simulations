@@ -5,6 +5,7 @@ import { PHASES } from "@/config/phases";
 import { cn } from "@/lib/cn";
 import { useSim } from "@/engine/store";
 import { useMenuStore } from "@/menu/store";
+import { applyPosHandoff } from "@/screens/tablet/pos/handoff";
 import { useThemeChoice } from "@/theme/store";
 import { MobileDevice } from "./device/MobileDevice";
 import { StageErrorBoundary } from "./ErrorBoundary";
@@ -42,6 +43,8 @@ export function Stage() {
       if (lastQrType) useSim.setState({ qrType: lastQrType });
       if (lastPaymentMode) useSim.setState({ paymentMode: lastPaymentMode });
       useSim.getState().setPhase(known ? lastPhase! : useSim.getState().phase);
+      // "Open in prototype" from a design-system page: Phase 2 POS in that case's state
+      applyPosHandoff();
       // from here on, remember every phase, QR type and payment mode switch
       stop = useSim.subscribe((s, prev) => {
         if (s.phase !== prev.phase) useThemeChoice.getState().rememberPhase(s.phase);

@@ -1105,6 +1105,37 @@ export function BucketLine({
   );
 }
 
+/**
+ * Empty state of a POS list. "bucket": the order bucket before anything is added. "items":
+ * the select-dish area when the API or menu data returns no items. Same 42px gap and
+ * 14px copy; the select-dish area is wider, so its illustration and glow are twice the bucket's.
+ */
+const EMPTY_STATES = {
+  bucket: { src: `${ASSET}/bag.svg`, w: 65.131, h: 96.897, glow: 1, copy: "No items for now" },
+  items: { src: `${ASSET}/empty-items.png`, w: 100.52, h: 230, glow: 2, copy: "Item unavailable for now" },
+} as const;
+
+export function EmptyState({ kind }: { kind: keyof typeof EMPTY_STATES }) {
+  const t = usePosTheme();
+  const { src, w, h, glow, copy } = EMPTY_STATES[kind];
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-[42px] pb-[46px]">
+      <div
+        className="relative flex items-center justify-center"
+        style={{
+          width: 107.276 * glow,
+          height: 115 * glow,
+          backgroundImage:
+            "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(141,154,169,0.2) 35%, rgba(141,154,169,0) 100%)",
+        }}
+      >
+        <Image src={src} alt="" width={w} height={h} style={{ width: w, height: h }} />
+      </div>
+      <p className={cn("text-sm leading-none", t.ink)}>{copy}</p>
+    </div>
+  );
+}
+
 /** The POS's action buttons, from the theme tokens (Pulse: the Table Detail buttons). */
 export function ActionButton({
   variant,

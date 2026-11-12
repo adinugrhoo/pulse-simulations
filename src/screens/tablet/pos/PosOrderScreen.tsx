@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { figtree } from "@/lib/fonts";
-import { useMenu } from "@/menu/hooks";
 import { useScheduleState } from "@/menu/useSchedule";
 import type { Dish, ResolvedSubcategory, ResolvedTabletCategory } from "@/menu/types";
 import type { CartChoice, CartEdit, CartLine, PosChosen, SheetSnap } from "@/engine/types";
@@ -14,13 +13,13 @@ import {
   type ModifierGroup,
   type ModifierOption,
 } from "@/config/global/modifiers";
-import { useSim } from "@/engine/store";
 import { currency } from "@/engine/types";
 import {
   ASSET,
   BucketLine,
   DishCard,
   DishRowCard,
+  EmptyState,
   FulfilledChip,
   NoteDialog,
   OptionCard,
@@ -30,6 +29,7 @@ import {
   sgd,
   usePosTheme,
 } from "./items";
+import { usePosMenu, usePosPreview, usePosSim, usePosUiStart } from "./preview";
 
 /** Hairline between page sections: the Figma svg on dark, a plain border on the light themes. */
 function Divider({ tone, className }: { tone: string | null; className: string }) {
@@ -62,7 +62,7 @@ function SubcategoryPage({
   onPickDish: (dish: Dish) => void;
 }) {
   const t = usePosTheme();
-  const scheduleOf = useScheduleState();
+  const scheduleOf = useScheduleState(usePosPreview()?.scheduleClock);
   return (
     <div className="flex h-full w-[900px] shrink-0 flex-col">
       <div className={cn("relative h-[86px] shrink-0 border-b", t.header)}>
@@ -112,45 +112,24 @@ function SubcategoryPage({
           ))}
         </div>
         <Divider tone={t.divider} className="h-px w-[900px] shrink-0" />
-        <div className="grid shrink-0 grid-cols-[repeat(3,280px)] gap-2.5 p-5">
-          {active.dishes.map((dish) => (
-            <DishRowCard
-              key={dish.id}
-              dish={dish}
-              inBucket={qtyInBucket(dish.id)}
-              onAdd={() => onPickDish(dish)}
-              unavailable={scheduleOf(dish)}
-            />
-          ))}
-          {active.dishes.length === 0 ? (
-            <p className={cn("col-span-3 text-sm", t.meta)}>No dishes in {active.name} yet.</p>
-          ) : null}
-        </div>
+        {active.dishes.length === 0 ? (
+          <div className="min-h-[320px] flex-1">
+            <EmptyState kind="items" />
+          </div>
+        ) : (
+          <div className="grid shrink-0 grid-cols-[repeat(3,280px)] gap-2.5 p-5">
+            {active.dishes.map((dish) => (
+              <DishRowCard
+                key={dish.id}
+                dish={dish}
+                inBucket={qtyInBucket(dish.id)}
+                onAdd={() => onPickDish(dish)}
+                unavailable={scheduleOf(dish)}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
-  );
-}
-
-function EmptyBucket() {
-  const t = usePosTheme();
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-[42px] pb-[46px]">
-      <div
-        className="relative flex h-[115px] w-[107.276px] items-center justify-center"
-        style={{
-          backgroundImage:
-            "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(141,154,169,0.2) 35%, rgba(141,154,169,0) 100%)",
-        }}
-      >
-        <Image
-          src={`${ASSET}/bag.svg`}
-          alt=""
-          width={65.131}
-          height={96.897}
-          className="h-[96.897px] w-[65.131px]"
-        />
-      </div>
-      <p className={cn("text-sm leading-none", t.ink)}>No items for now</p>
     </div>
   );
 }
@@ -664,7 +643,7 @@ function ComboScreen({
   onBack: () => void;
   onSave: (save: ComboSave) => void;
 }) {
-  const menu = useMenu();
+  const menu = usePosMenu();
   const groups = useMemo(() => modifierGroupsFor(dish, menu)!, [dish, menu]);
   const [selected, setSelected] = useState<Record<string, Chosen>>(initial?.selected ?? {});
   const [activeId, setActiveId] = useState(groups[0].id);
@@ -895,28 +874,30 @@ function ComboScreen({
  * `waiter.cart`. Confirm Order submits it and drops back to the open table dialog.
  */
 export function PosOrderScreen() {
-  const dispatch = useSim((s) => s.dispatch);
-  const scheduleOf = useScheduleState();
-  const tableId = useSim(
+  const dispatch = usePosSim((s) => s.dispatch);
+  const scheduleOf = useScheduleState(usePosPreview()?.scheduleClock);
+  const tableId = usePosSim(
     (s) => s.waiter.openTableId ?? s.waiter.selectedTableId,
   );
-  const cart = useSim((s) => s.waiter.cart);
+  const cart = usePosSim((s) => s.waiter.cart);
   /** Bucket line whose note dialog is open; in the sim store so a scenario step can open it. */
-  const noteLine = useSim((s) => s.waiter.cart.find((l) => l.lineId === s.waiter.noteLineId));
+  const noteLine = usePosSim((s) => s.waiter.cart.find((l) => l.lineId === s.waiter.noteLineId));
   /** Open category (and subcategory) live in the store so scenario steps can drive them. */
-  const pos = useSim((s) => s.waiter.pos);
+  const pos = usePosSim((s) => s.waiter.pos);
   const activeCategory = pos?.categoryId ?? null;
   /** Figma 2912:15818: the header search swaps the category grid for matching dishes across every category. */
-  const [searching, setSearching] = useState(false);
+  const preview = usePosPreview();
+  const ui = usePosUiStart();
+  const [searching, setSearching] = useState(ui?.searching ?? false);
   /** Pulse recommendations auto-hide once a category opens; the bottom-left tile brings them back. */
-  const [showReco, setShowReco] = useState(true);
+  const [showReco, setShowReco] = useState(ui?.showReco ?? true);
   // opening a category hides the recommendations, closing one brings them back
   const [shownFor, setShownFor] = useState(activeCategory);
   if (shownFor !== activeCategory) {
     setShownFor(activeCategory);
     setShowReco(!activeCategory);
   }
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(ui?.query ?? "");
   /** Dish whose combo options are being filled in, if any. */
   const [combo, setCombo] = useState<Dish | null>(null);
   /** Dish with its own modifier sheet (no combo page), if one is open. */
@@ -926,8 +907,10 @@ export function PosOrderScreen() {
   /** Bucket line being edited through the combo page or option sheet; saving replaces it. */
   const [editLine, setEditLine] = useState<CartLine | null>(null);
 
-  const menu = useMenu();
+  const menu = usePosMenu();
   const categories = menu.tablet;
+  /** The API or menu data lists no dishes at all: the category grid and recommendations give way to the empty state. */
+  const noItems = categories.every((c) => c.dishes.length === 0);
   const openCategory = categories.find((c) => c.id === activeCategory);
   const dishes = openCategory?.dishes ?? [];
   /** Figma 3124:186: categories with subcategories open their own page instead of expanding inline. */
@@ -1075,7 +1058,8 @@ export function PosOrderScreen() {
                 className={cn("absolute top-[31px] left-5 size-6", t.iconInv)}
               />
               <input
-                autoFocus
+                // a design-system page stacks several of these; focusing one would scroll the canvas
+                autoFocus={!preview}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search all item"
@@ -1157,6 +1141,8 @@ export function PosOrderScreen() {
                 <p className={cn("col-span-3 text-sm", t.meta)}>No dishes found for &ldquo;{query.trim()}&rdquo;.</p>
               ) : null}
             </div>
+          ) : noItems ? (
+            <EmptyState kind="items" />
           ) : (
           <div className="grid shrink-0 grid-cols-5 gap-2.5 p-5">
             {categories.map((c) => (
@@ -1184,6 +1170,11 @@ export function PosOrderScreen() {
           {!searching && activeCategory ? (
             <>
               <Divider tone={t.divider} className="h-px w-[900px] shrink-0" />
+              {dishes.length === 0 ? (
+                <div className="min-h-[320px] flex-1">
+                  <EmptyState kind="items" />
+                </div>
+              ) : (
               <div className="grid shrink-0 grid-cols-[repeat(3,280px)] gap-2.5 p-5">
                 {dishes.map((dish) => (
                   <DishRowCard
@@ -1200,15 +1191,16 @@ export function PosOrderScreen() {
                   />
                 ))}
               </div>
+              )}
             </>
           ) : null}
         </div>
 
         <div
-          aria-hidden={!showReco || searching ? true : undefined}
+          aria-hidden={!showReco || searching || noItems ? true : undefined}
           className={cn(
             "relative shrink-0 overflow-hidden transition-[height,opacity] duration-300 ease-out",
-            !showReco || searching ? "pointer-events-none h-0 opacity-0" : "h-[278px] opacity-100",
+            !showReco || searching || noItems ? "pointer-events-none h-0 opacity-0" : "h-[278px] opacity-100",
           )}
         >
           <Divider tone={t.divider} className="absolute top-0 left-0 h-px w-[900px]" />
@@ -1239,10 +1231,10 @@ export function PosOrderScreen() {
         </div>
 
         <div
-          aria-hidden={showReco || searching ? true : undefined}
+          aria-hidden={showReco || searching || noItems ? true : undefined}
           className={cn(
             "shrink-0 overflow-hidden transition-[height,opacity] duration-300 ease-out",
-            showReco || searching ? "pointer-events-none h-0 opacity-0" : "h-[66px] opacity-100",
+            showReco || searching || noItems ? "pointer-events-none h-0 opacity-0" : "h-[66px] opacity-100",
           )}
         >
           <button
@@ -1269,7 +1261,7 @@ export function PosOrderScreen() {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5">
           {cart.length === 0 ? (
-            <EmptyBucket />
+            <EmptyState kind="bucket" />
           ) : (
             <ul className="flex flex-col">
               {cart.map((line) => (
