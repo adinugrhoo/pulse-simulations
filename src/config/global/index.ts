@@ -10,7 +10,7 @@ export const GLOBAL_CONFIG = {
   /** Prefix for every price the sim prints. */
   currency: "SGD",
   /** Phase the page opens on. */
-  defaultPhase: "1.0",
+  defaultPhase: "2.0",
 } as const;
 
 /** Base menu: every dish and both devices' category lists. Edit it in the Menu Studio or by hand. */

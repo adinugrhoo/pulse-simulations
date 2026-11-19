@@ -199,13 +199,6 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
           lines: tableOrders.flatMap((o) => o.lines),
           paidAtTick: draft.tick,
         };
-
-        signal(draft, {
-          device: "tablet",
-          kind: "success",
-          title: `Payment received · ${table.label}`,
-          body: `SGD${amount.toFixed(2)}`,
-        });
         break;
       }
 

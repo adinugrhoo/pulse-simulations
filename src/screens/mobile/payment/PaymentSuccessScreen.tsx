@@ -38,7 +38,7 @@ export function PaymentSuccessScreen() {
         <div className="flex flex-col items-center gap-6 px-4 pt-10 pb-8">
           <div className="flex flex-col items-center gap-3 pb-2">
             <div className="relative size-[59px]">
-              <Image src="/figma/mobile-payment-success/check.gif" alt="" fill unoptimized className="object-contain" />
+              <Image src="/figma/mobile-payment-success/check.gif" alt="" fill unoptimized className="object-contain mix-blend-multiply" />
             </div>
             <p className="max-w-[272px] text-center text-[18px] leading-6 font-bold tracking-[-0.5px] text-[#00b25f]">
               Your bill has been successfully paid!
