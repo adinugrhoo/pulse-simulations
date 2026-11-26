@@ -6,13 +6,16 @@ import { cn } from "@/lib/cn";
 import { figtree } from "@/lib/fonts";
 import { cancelSmoothScroll, smoothScrollTo } from "@/lib/smoothScroll";
 import { SECTIONS } from "@/config/global";
+import { activeCalls } from "@/engine/calls";
 import { useSim } from "@/engine/store";
 import { currency, type Table } from "@/engine/types";
+import { usePhaseConfig } from "@/theme/hooks";
 import { TabletTabBar } from "../shared/TabletTabBar";
 import { formatExpiry, qrMinutesLeft } from "../order-detail/DynamicQrPanel";
 import { OrderDetailDialogV2 } from "../order-detail/OrderDetailDialogV2";
 import { OpenTableFlow } from "../sheets/OpenTableSheets";
 import { ConfirmCloseSheet, PaidTableSheet } from "../sheets/PaidTableSheets";
+import { CallsButton, CallsSidebar, CallTag } from "./CallWaiters";
 import { SectionLegend, SectionsSidebar, type SectionCounts } from "./SectionsSidebar";
 import { formatSeated } from "./TablesScreen";
 
@@ -258,6 +261,13 @@ export function TablesScreenV2() {
   const [occupancy, setOccupancy] = useState<Occupancy>("All");
   const [payment, setPayment] = useState<Payment>("All");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const callWaiter = usePhaseConfig().features.callWaiter;
+  const [callsOpen, setCallsOpen] = useState(false);
+  const calls = useMemo(() => activeCalls(tables), [tables]);
+  const calling = calls.filter((c) => c.call.status === "calling").length;
+  const acceptCall = useCallback((tableId: string) => dispatch({ type: "waiter/accept-call", tableId }), [dispatch]);
+  const completeCall = useCallback((tableId: string) => dispatch({ type: "waiter/complete-call", tableId }), [dispatch]);
+  const closeCalls = useCallback(() => setCallsOpen(false), []);
   /** Overpaid table being closed: its paid-bill sheet, then the confirmation. */
   const [paidSheet, setPaidSheet] = useState<{ id: string; step: "detail" | "confirm" } | null>(null);
   /** Vacant table the waiter is opening: guest form, then straight into its order detail. */
@@ -350,6 +360,7 @@ export function TablesScreenV2() {
         <button className="flex size-[54px] items-center justify-center rounded-full bg-white/10">
           <Image src="/figma/tablet-tables/history.svg" alt="History" width={20} height={20} />
         </button>
+        {callWaiter ? <CallsButton calling={calling} onOpen={() => setCallsOpen(true)} /> : null}
       </div>
 
       {/* sections */}
@@ -386,9 +397,23 @@ export function TablesScreenV2() {
               {list.length ? (
                 <div className="grid grid-cols-5 gap-5">
                   {list.map((table) => (
-                    <TableCard key={table.id} table={table} onOpenPaid={(id) => setPaidSheet({ id, step: "detail" })}
-                      onOpenTable={setOpeningId}
-                    />
+                    // the call tag is the card's sibling: a button can't sit inside the card's button
+                    <div key={table.id} className="relative">
+                      <TableCard
+                        table={table}
+                        onOpenPaid={(id) => setPaidSheet({ id, step: "detail" })}
+                        onOpenTable={setOpeningId}
+                      />
+                      {callWaiter ? (
+                        <CallTag
+                          call={table.call}
+                          dismissedAt={table.callDismissedAt}
+                          tableLabel={table.label}
+                          onAccept={() => acceptCall(table.id)}
+                          onComplete={() => completeCall(table.id)}
+                        />
+                      ) : null}
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -410,6 +435,16 @@ export function TablesScreenV2() {
         onSelect={goTo}
         onClose={() => setSidebarOpen(false)}
       />
+
+      {callWaiter ? (
+        <CallsSidebar
+          open={callsOpen}
+          calls={calls}
+          onAccept={acceptCall}
+          onComplete={completeCall}
+          onClose={closeCalls}
+        />
+      ) : null}
 
       {sheetTable && paidSheet?.step === "detail" ? (
         <PaidTableSheet

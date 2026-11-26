@@ -268,6 +268,74 @@ body {
   animation: reader-dot-pulse 1.2s ease-in-out infinite;
 }
 
+/*
+ * tablet "Present card": the glow on the reader beats twice (lub-dub) per 1.6s, the card dips
+ * toward the reader on the same 1.6s, and the arrows under "Tap card here" run to the edge.
+ * The glow runs 0.16s behind (a -1.44s delay), so its second beat lands as the card touches down.
+ */
+@keyframes reader-heartbeat {
+  0%,
+  64%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.5;
+  }
+  14% {
+    transform: scale(1.04);
+    opacity: 0.9;
+  }
+  26% {
+    transform: scale(0.98);
+    opacity: 0.65;
+  }
+  40% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.animate-reader-heartbeat {
+  animation: reader-heartbeat 1.6s ease-in-out infinite;
+}
+
+@keyframes reader-card-tap {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(36px) rotate(0deg);
+  }
+}
+
+.animate-reader-card-tap {
+  animation: reader-card-tap 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes reader-chevron {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translateY(-3px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(3px);
+  }
+}
+
+.animate-reader-chevron {
+  animation: reader-chevron 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-reader-heartbeat,
+  .animate-reader-card-tap,
+  .animate-reader-chevron {
+    animation: none;
+  }
+}
+
 /* table-open toast: slides in from the right edge, holds 3s, slides back out (0.6s + 3s + 0.6s) */
 @keyframes toast-slide {
   0% {

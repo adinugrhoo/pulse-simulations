@@ -15,7 +15,7 @@ export const phase: PhaseConfig = {
   label: "Phase 2.0",
   chip: "Ongoing",
   tone: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
-  features: { floor: "sections", splitBill: true },
+  features: { floor: "sections", splitBill: true, callWaiter: true },
   seedTables: seedTablesV2,
   scenarios: { static: SCENARIO, dynamic: DYNAMIC_SCENARIO },
   menu: menu as MenuPatch,

@@ -84,6 +84,21 @@ export type Order = {
 
 export type TableStatus = "vacant" | "allocated" | "occupied" | "partial" | "billed";
 
+/**
+ * A guest calling for a waiter (Phase 2.0, Figma 3221:239): red while it waits, green once
+ * a waiter accepts it, gone once they mark it done.
+ */
+export type WaiterCall = {
+  status: "calling" | "accepted";
+  /** Wall-clock ms of the call, so the tablet can show how long the guest has waited. */
+  at: number;
+  /**
+   * Wall-clock ms of the guest calling again while this call was still open. The call keeps
+   * its `at`, so it keeps its place in the drawer; cleared when a waiter accepts it.
+   */
+  again?: number;
+};
+
 /** One payment taken against a table's bill; a table can collect several (split, part-pay, cash top-up). */
 export type Payment = {
   id: string;
@@ -121,8 +136,10 @@ export type Table = {
   balance?: number;
   /** Customer tapped "request bill" on mobile; tablet surfaces it. */
   billRequested?: boolean;
-  /** Customer tapped "call waiter"; cleared once the waiter opens the table. */
-  assistanceRequested?: boolean;
+  /** A guest asked for a waiter; cleared when the waiter marks the call done or the table closes. */
+  call?: WaiterCall;
+  /** Wall-clock ms the guest last cancelled their call, so the floor can say so briefly. */
+  callDismissedAt?: number;
   /** Vacant tables only: the party that just paid and left, kept as a hint on the floor card and the open sheet. */
   lastSession?: { paidBill: number; minutesAgo: number };
   /** Tick of the most recent full payment — TableCard blinks once when this changes. */

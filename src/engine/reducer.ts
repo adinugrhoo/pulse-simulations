@@ -1,5 +1,6 @@
 import { produce } from "immer";
 import { grandTotal, platformFee } from "./bill";
+import { canCall } from "./calls";
 import type { SimEvent } from "./events";
 import type { SimState } from "./state";
 import type { CartLine, Order, Payment, Signal, Table } from "./types";
@@ -142,14 +143,28 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
       }
 
       case "customer/call-waiter": {
-        const table = tableOf(draft, draft.customer.tableId);
-        if (table) table.assistanceRequested = true;
-        signal(draft, {
-          device: "tablet",
-          kind: "alert",
-          title: `Assistance · ${table?.label ?? "table"}`,
-          body: event.reason,
-        });
+        const table = tableOf(draft, event.tableId ?? draft.customer.tableId);
+        // a guest already waiting keeps their place in the queue
+        if (!table || !canCall(table) || table.call?.status === "calling") break;
+        table.call = { status: "calling", at: event.at };
+        delete table.callDismissedAt;
+        break;
+      }
+
+      case "customer/dismiss-call": {
+        const table = tableOf(draft, event.tableId);
+        if (!table?.call) break;
+        delete table.call;
+        table.callDismissedAt = event.at;
+        break;
+      }
+
+      case "customer/call-again": {
+        const call = tableOf(draft, event.tableId)?.call;
+        if (!call) break;
+        // back to red, but `at` stays so the drawer order doesn't move
+        call.status = "calling";
+        call.again = event.at;
         break;
       }
 
@@ -259,8 +274,6 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
       case "waiter/select-table": {
         draft.waiter.selectedTableId = event.tableId;
         draft.waiter.openTableId = event.tableId;
-        const table = tableOf(draft, event.tableId);
-        if (table) table.assistanceRequested = false;
         break;
       }
 
@@ -432,6 +445,21 @@ export const reduce = (state: SimState, event: SimEvent): SimState =>
         draft.waiter.openTableId = event.tableId;
         // dynamic QR in phase 2: the waiter is nudged to print the table's QR
         if (draft.qrType === "dynamic" && draft.phase === "2.0") printQr(draft, table, "Open & Print QR table");
+        break;
+      }
+
+      case "waiter/accept-call": {
+        const call = tableOf(draft, event.tableId)?.call;
+        if (call) {
+          call.status = "accepted";
+          delete call.again;
+        }
+        break;
+      }
+
+      case "waiter/complete-call": {
+        const table = tableOf(draft, event.tableId);
+        if (table) delete table.call;
         break;
       }
 

@@ -68,7 +68,7 @@ src/config/
 
 Rules of thumb:
 
-- **Screens read features and tokens, never phase ids.** `usePhaseConfig().features` (`floor`, `splitBill`) and
+- **Screens read features and tokens, never phase ids.** `usePhaseConfig().features` (`floor`, `splitBill`, `callWaiter`) and
   `useTokens("mobile" | "tablet")` (`src/theme/hooks.ts`) are the only ways a screen learns which phase or theme it is in.
 - **The menu stacks global → phase → theme.** A phase or theme `menu.json` is a patch: `dishes` (field overrides by id),
   `added` (new dishes), `removed` (hidden ids) and `categories.mobile` / `categories.tablet` (replace the whole list for
@@ -84,6 +84,11 @@ Rules of thumb:
 - The header's **Payment** (Same device / Payment terminal) is `paymentMode` in the sim state. Payment terminal swaps
   the customer phone for an Adyen photo (`DEVICES.terminal`, a `skin` in `config/global/devices.ts`); the mobile
   screens render inside its display, scaled to fit.
+- Same device plays the card reader full screen on the tablet (`SameDevicePayment.tsx`). Its Present card is
+  `TabletPresentCard`, not the terminal's `PresentCard`: a tablet layout turned 180° for the guest across the table,
+  with "Tap card here" on the edge by the reader (top centre, under the printer dock). It holds 30s
+  (`SAME_DEVICE_TAP_CARD_MS` in `store.ts`; the terminal's tap card holds 3s). Keyframes `reader-heartbeat`,
+  `reader-card-tap` and `reader-chevron` live in `globals.css`.
 - The header remembers the selected phase, QR type, payment mode and each phase's theme for the browser session (`src/theme/store.ts`).
 
 ### Adding a theme
@@ -182,6 +187,23 @@ on `tables` in `triggers.ts`; routing elsewhere would unmount the dialog mid-act
 `t01`-`t15`). The top-left pill names the section in view (scroll-spy) and opens `SectionsSidebar`, a blurred left
 drawer with per-section vacant / allocate counts; picking a section eases the scroll there (`src/lib/smoothScroll.ts`,
 ease-in-out). Sidebar and scroll state are local UI, not sim state.
+
+**Call waiter (Phase 2.0, Figma `3224:4857` idle, `3221:239` calling).** A call lives on the table (`Table.call`:
+`calling` → `accepted`, removed when done). `customer/call-waiter` starts one; until the phone has its Call Waiter
+button, hotkey **2** (`Stage.tsx`, `nextCaller` in `src/engine/calls.ts`) rings the next seated table without a call,
+in floor order. `waiter/accept-call` and `waiter/complete-call` answer it from either the table's Calling tag (tap to
+accept, tap again to clear) or the drawer opened by the top-right hand button / Customers Calling pill
+(`CallWaiters.tsx`). The hand is lucide-animated's `HandIcon` (`src/components/ui/hand.tsx`, added with the shadcn
+CLI through `components.json`), the same lucide hand the Figma uses. The drawer's open state is local UI.
+The tag reads "New calling" for 15s, "Calling" until a minute, then "Customer waiting.."; the first and last bob and
+wave. Swiping a tag or a drawer row left or right completes the call at once. `src/stage/useCallSounds.ts` plays
+`public/sounds/call-new.mp3` on a new call and `call-done.mp3` on done, from the event log (so it rings on any screen).
+Hotkey **3** (`nextRecaller`) dispatches `customer/call-again` on the first table in floor order whose open call
+hasn't rung again: it sets `call.again`, turns an accepted call back to `calling`, keeps `at` (drawer order holds),
+and plays the bell. The tag reads "Calling again", pops once, then bobs and waves. Accepting clears `again`.
+Hotkey **4** (`nextDismisser`) dispatches `customer/dismiss-call` on the first table in floor order with an open call:
+the call is removed and `Table.callDismissedAt` set, so the tag shows a grey "Call dismissed" for 3s
+(`useRecentlyDismissed`, a timer, not the 1s clock). A new call clears it. No sound.
 
 **POS order (Phase 2.0, Figma `2820:17259`).** `pos-order` is a full-screen tablet registry screen
 (`PosOrderScreen.tsx`). "Add Order" in `OrderDetailDialog` dispatches `waiter/open-pos`; the order bucket is the live
