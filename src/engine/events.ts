@@ -16,7 +16,15 @@ export type SimEvent =
   | { type: "customer/decrement-cart-line"; lineId: string }
   | { type: "customer/open-cart" }
   | { type: "customer/submit-order" }
-  | { type: "customer/call-waiter"; reason?: string }
+  /**
+   * A guest asks for a waiter: from the phone later, from hotkey 2 for now. `tableId`
+   * defaults to the customer's own table; `at` is wall-clock ms, passed in so the reducer stays pure.
+   */
+  | { type: "customer/call-waiter"; tableId?: string; at: number }
+  /** A guest with an open call rings again (hotkey 3 for now): the call turns red, "Calling again". */
+  | { type: "customer/call-again"; tableId: string; at: number }
+  /** A guest cancels their open call (hotkey 4 for now): it leaves the floor and the drawer. */
+  | { type: "customer/dismiss-call"; tableId: string; at: number }
   | { type: "customer/request-bill" }
   | { type: "customer/pay-bill" }
   | { type: "customer/start-split"; plan: SplitPlan }
@@ -48,6 +56,10 @@ export type SimEvent =
   | { type: "waiter/close-table"; tableId: string }
   | { type: "waiter/print-qr"; tableId: string }
   | { type: "waiter/open-table"; tableId: string; guests: number; guestName: string; phone: string }
+  /** The waiter takes a table's call: its tag and drawer row turn green. */
+  | { type: "waiter/accept-call"; tableId: string }
+  /** The waiter has helped the guest: the call disappears. */
+  | { type: "waiter/complete-call"; tableId: string }
   /* simulation control */
   | { type: "sim/navigate"; mobile?: MobileScreenId; tablet?: TabletScreenId }
   | { type: "sim/reset" };

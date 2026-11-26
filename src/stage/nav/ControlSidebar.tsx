@@ -15,6 +15,8 @@ import { dirtyKeys, useMenuStore } from "@/menu/store";
 
 type Choice<T extends string> = { id: T; label: string; description?: string; chip?: ReactNode };
 
+const KBD = "rounded-md border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px] text-neutral-200";
+
 const QR_TYPES: Choice<QrType>[] = [
   { id: "static", label: "Static", description: "Printed code on the table. Every scan lands on the same table." },
   { id: "dynamic", label: "Dynamic", description: "Code generated per seating. Same screens, a slightly different flow." },
@@ -262,10 +264,30 @@ export function ControlSidebar({ hidden = false }: { hidden?: boolean }) {
           </div>
         </PopoverLayout>
 
-        <p className="flex shrink-0 items-center gap-2 border-t border-white/[0.08] px-5 py-3 text-[11px] text-neutral-400">
-          <kbd className="rounded-md border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px] text-neutral-200">F</kbd>
-          Hide the controls for recording; press again to bring them back
-        </p>
+        <div className="flex shrink-0 flex-col gap-2 border-t border-white/[0.08] px-5 py-3 text-[11px] text-neutral-400">
+          <p className="flex items-center gap-2">
+            <kbd className={KBD}>F</kbd>
+            Hide the controls for recording; press again to bring them back
+          </p>
+          {phase.features.callWaiter ? (
+            <p className="flex items-center gap-2">
+              <kbd className={KBD}>2</kbd>
+              A guest at the next seated table calls for a waiter
+            </p>
+          ) : null}
+          {phase.features.callWaiter ? (
+            <p className="flex items-center gap-2">
+              <kbd className={KBD}>3</kbd>
+              The next table already calling calls again
+            </p>
+          ) : null}
+          {phase.features.callWaiter ? (
+            <p className="flex items-center gap-2">
+              <kbd className={KBD}>4</kbd>
+              The next table calling cancels its call
+            </p>
+          ) : null}
+        </div>
 
         <nav aria-label="Tools" className="shrink-0 border-t border-white/[0.08] p-2.5">
           <p className="px-3 pt-1.5 pb-2 text-[11px] font-semibold tracking-[0.1em] text-neutral-400 uppercase">Tools</p>

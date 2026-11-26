@@ -34,6 +34,11 @@ type SimActions = {
 /** How long each terminal screen holds before the next: processing, tap card, then the done animation. */
 const TERMINAL_PROCESSING_MS = 2000;
 const TERMINAL_TAP_CARD_MS = 3000;
+/**
+ * Same device: the tablet is turned to the guest across the table, so Present card holds 30s
+ * (time to find a card, and to watch the reader animation) before it approves.
+ */
+const SAME_DEVICE_TAP_CARD_MS = 30_000;
 const TERMINAL_DONE_MS = 2200;
 /** A customer scanning the QR with their phone takes a little longer than tapping a card. */
 const TERMINAL_QR_SCAN_MS = 4000;
@@ -129,7 +134,8 @@ export const useSim = create<SimState & SimActions>((set, get) => ({
       return;
     }
     setTimeout(() => get().advanceTerminal(run, "tap-card"), TERMINAL_PROCESSING_MS);
-    setTimeout(() => get().advanceTerminal(run, "done"), TERMINAL_PROCESSING_MS + TERMINAL_TAP_CARD_MS);
+    const tapCardMs = get().paymentMode === "same-device" ? SAME_DEVICE_TAP_CARD_MS : TERMINAL_TAP_CARD_MS;
+    setTimeout(() => get().advanceTerminal(run, "done"), TERMINAL_PROCESSING_MS + tapCardMs);
   },
 
   /**

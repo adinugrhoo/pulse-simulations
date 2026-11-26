@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import { DEFAULT_POS_TOKENS } from "@/config/global/theme";
 import { scheduleState } from "@/menu/schedule";
+import type { ActiveCall } from "@/engine/calls";
+import type { Table, WaiterCall } from "@/engine/types";
 import { BucketLine, DishRowCard, EmptyState, NoteDialog, OptionCard, SummaryCard } from "@/screens/tablet/pos/items";
+import { PresentCard, TabletPresentCard } from "@/screens/tablet/sheets/SameDevicePayment";
+import { CallsButton, CallsSidebar, CallTag } from "@/screens/tablet/tables/CallWaiters";
 
 /**
  * Product changelog for the Pulse app (waiter tablet POS), the customer mobile and the
@@ -126,9 +130,112 @@ const FullOption = () => (
   </div>
 );
 
+/** A floor card stand-in, just enough to seat a call tag on its top edge. */
+const TagOnCard = ({ label, bg, call }: { label: string; bg: string; call: WaiterCall }) => (
+  <div className={`relative flex h-[120px] w-[200px] items-end rounded-[20px] p-4 ${bg}`}>
+    <p className="text-2xl leading-none font-bold text-white">{label}</p>
+    <CallTag call={call} tableLabel={label} now={PREVIEW_NOW} onAccept={() => {}} onComplete={() => {}} />
+  </div>
+);
+
+/** Drawer preview on a stopped clock, so the server and the browser render the same times. */
+const PREVIEW_NOW = 1_000_000;
+const previewTable = (id: string, label: string): Table => ({ id, label, section: "main-dining", status: "occupied" });
+const PREVIEW_CALLS: ActiveCall[] = [
+  { table: previewTable("t04", "Table 04"), call: { status: "accepted", at: PREVIEW_NOW - 185_000 } },
+  { table: previewTable("t06", "Table 06"), call: { status: "calling", at: PREVIEW_NOW - 72_000 } },
+  { table: previewTable("t08", "Table 08"), call: { status: "calling", at: PREVIEW_NOW - 9_000 } },
+];
+
 /* ------------------------------------ entries ----------------------------------- */
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "v0.8.0",
+    date: "2026-11-26",
+    status: "unreleased",
+    title: "Call waiter",
+    summary:
+      "Guests can call for a waiter and the Pulse floor shows it: a Customers Calling count top right, a Calling tag on each table that called, and a drawer to accept the calls and mark them done. The customer's Call Waiter button on mobile comes next.",
+    source: { label: "Branch", value: "new-feature/call-waiters" },
+    scope: { phase: "Phase 2.0", theme: "Dark (Pulse), Light, Foodpanda", payment: "Same device", qr: "—" },
+    changes: [
+      { kind: "changed", area: "Payment", text: "Same-device Present card is laid out for the tablet instead of the terminal's narrow column, and turned 180° so the guest across the table reads it. Tap card here with arrows sits on the edge by the reader (top centre, under the printer dock); the card dips toward it and a soft glow beats twice each time it lands. It holds 30s before approving (the terminal keeps 3s)." },
+      { kind: "added", area: "Floor", text: "A round hand button joins search and history top right. While guests wait it becomes Customers Calling with a red count and a waving hand; either opens the calls drawer." },
+      { kind: "added", area: "Floor", text: "A table that called carries a white tag on its top edge: New calling (first 15s, bobbing, hand waving), then Calling (still), then Customer waiting.. past a minute (bobbing again). Tap to accept (green, check), tap again once the guest is helped; swipe it left or right to clear it at once." },
+      { kind: "added", area: "Floor", text: "A guest who calls again reads Calling again: the tag turns red even if it was accepted, pops once, then bobs and waves. The drawer keeps its order and marks the row Calling again. Hotkey 3 rings the next calling table again, floor order, until the phone has its button." },
+      { kind: "added", area: "Floor", text: "A guest who cancels their call: the tag shrinks away and a grey Call dismissed pill shows for 3s, the drawer row leaves and the count drops. Hotkey 4 cancels the next calling table, floor order." },
+      { kind: "added", area: "Floor", text: "Sounds: a bell when a guest calls or calls again, a short chime when a call is done." },
+      { kind: "added", area: "Floor", text: "Calls drawer from the right, same glass as the sections drawer: each calling table, how long since it called and its section, longest wait first. Accept turns a call green; Done with a check clears it, or swipe the row left or right." },
+    ],
+    design: [
+      {
+        component: "Present card (same device)",
+        where: "Order detail: Pay, SmartPay",
+        note: "Tablet layout: 112px amount, 40px Present card, a 300px card that dips 36px toward the reader, Tap card here on the reader edge with arrows and a glow bar. The page is turned 180° for the guest, so on the waiter's side it reads upside down with Tap card here at the top centre. The terminal keeps its own Present card.",
+        before: (
+          <div className="relative h-[200px] w-[320px] shrink-0 overflow-hidden rounded-lg">
+            <div className="absolute top-0 left-0 h-[800px] w-[1280px] origin-top-left scale-25">
+              <PresentCard amount={42.5} />
+            </div>
+          </div>
+        ),
+        after: (
+          <div className="relative h-[200px] w-[320px] shrink-0 overflow-hidden rounded-lg">
+            <div className="absolute top-0 left-0 h-[800px] w-[1280px] origin-top-left scale-25">
+              <TabletPresentCard amount={42.5} />
+            </div>
+          </div>
+        ),
+      },
+      {
+        component: "Customer calls button",
+        where: "Floor: top right, after search and history",
+        note: "New. Idle: 54px round hand button (Figma 3224:5132). Calling: Customers Calling with a red count pill and a waving hand (Figma 3221:424).",
+        after: (
+          <div className="flex items-center gap-3">
+            <CallsButton calling={0} onOpen={() => {}} />
+            <CallsButton calling={3} onOpen={() => {}} />
+          </div>
+        ),
+      },
+      {
+        component: "Call tag",
+        where: "Floor: top edge of a table card",
+        note: "New. Figma 3222:500, centred on the card's top edge, hand 30% bigger (14px). New calling for 15s and Customer waiting.. past a minute bob 7px and wave; Calling in between sits still. Accepted turns the floor's paid green with a check. Tap: accept, then done; swipe left or right: done.",
+        after: (
+          <div className="flex items-center gap-6 pt-4">
+            <TagOnCard label="Table 08" bg="bg-[#917b0a]" call={{ status: "calling", at: PREVIEW_NOW - 5_000 }} />
+            <TagOnCard label="Table 06" bg="bg-[#917b0a]" call={{ status: "calling", at: PREVIEW_NOW - 30_000 }} />
+            <TagOnCard label="Table 12" bg="bg-[#917b0a]" call={{ status: "calling", at: PREVIEW_NOW - 90_000 }} />
+            <TagOnCard
+              label="Table 10"
+              bg="bg-[#917b0a]"
+              call={{ status: "calling", at: PREVIEW_NOW - 40_000, again: PREVIEW_NOW - 3_000 }}
+            />
+            <TagOnCard label="Table 04" bg="bg-[#917b0a]" call={{ status: "accepted", at: PREVIEW_NOW - 90_000 }} />
+          </div>
+        ),
+      },
+      {
+        component: "Calls drawer",
+        where: "Floor: Customers Calling",
+        note: "New. 400px glass drawer from the right, the sections drawer mirrored; 40px wider so the time and section fit beside the 96px Accept / Done button.",
+        after: (
+          <div className="relative h-[400px] w-[640px] overflow-hidden rounded-xl bg-[#121415]">
+            <CallsSidebar
+              open
+              now={PREVIEW_NOW}
+              calls={PREVIEW_CALLS}
+              onAccept={() => {}}
+              onComplete={() => {}}
+              onClose={() => {}}
+            />
+          </div>
+        ),
+      },
+    ],
+  },
   {
     version: "v0.7.0",
     date: "2026-11-12",

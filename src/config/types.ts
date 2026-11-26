@@ -34,6 +34,8 @@ export type PhaseFeatures = {
   floor: "plan" | "sections";
   /** Customer bill goes through the loading screen and offers Split the Bill. */
   splitBill: boolean;
+  /** Guests can call a waiter: hotkey 2 rings the next seated table, the floor shows the calls. */
+  callWaiter: boolean;
 };
 
 export type ThemeConfig = {

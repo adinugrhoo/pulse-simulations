@@ -28,7 +28,10 @@ export const TRIGGERS: { [T in SimEventType]?: Trigger<T> } = {
   "customer/open-cart": { mobile: "cart" },
   // the tablet stays on the floor: the table card just shows the bill growing
   "customer/submit-order": { mobile: "order-placed", tablet: "tables" },
-  "customer/call-waiter": { tablet: "table-detail" },
+  // a call shows on the floor (tag on the table, Customers Calling up top); neither device moves
+  "customer/call-waiter": {},
+  "customer/call-again": {},
+  "customer/dismiss-call": {},
   // viewing the bill is the customer's own screen; the tablet stays on the floor
   "customer/request-bill": (_event, next) => ({
     mobile: getPhase(next.phase).features.splitBill ? "bill-loading" : "bill",
@@ -66,6 +69,9 @@ export const TRIGGERS: { [T in SimEventType]?: Trigger<T> } = {
   "waiter/submit-order": { tablet: "tables" },
   "waiter/set-order-status": { mobile: "order-status", tablet: "orders" },
   "waiter/settle-bill": { mobile: "bill", tablet: "tables" },
+  // answered from the table tag or the calls drawer, both on the floor
+  "waiter/accept-call": {},
+  "waiter/complete-call": {},
 };
 
 export const resolveNav = (event: SimEvent, next: SimState): NavEffect => {

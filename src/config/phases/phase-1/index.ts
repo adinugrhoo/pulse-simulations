@@ -13,7 +13,7 @@ export const phase: PhaseConfig = {
   label: "Phase 1.0",
   chip: "Design Ready",
   tone: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30",
-  features: { floor: "plan", splitBill: false },
+  features: { floor: "plan", splitBill: false, callWaiter: false },
   seedTables: seedTablesV1,
   scenarios: { static: SCENARIO, dynamic: DYNAMIC_SCENARIO },
   menu: menu as MenuPatch,

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PHASES } from "@/config/phases";
+import { getPhase, PHASES } from "@/config/phases";
 import { cn } from "@/lib/cn";
+import { nextCaller, nextDismisser, nextRecaller } from "@/engine/calls";
 import { useSim } from "@/engine/store";
 import { useMenuStore } from "@/menu/store";
 import { applyPosHandoff } from "@/screens/tablet/pos/handoff";
@@ -11,6 +12,7 @@ import { MobileDevice } from "./device/MobileDevice";
 import { StageErrorBoundary } from "./ErrorBoundary";
 import { TabletDevice } from "./device/TabletDevice";
 import { ScenarioBar } from "./header/ScenarioBar";
+import { useCallSounds } from "./useCallSounds";
 import { ControlSidebar } from "./nav/ControlSidebar";
 import { GLASS, PROGRESSIVE_BLUR } from "./glass";
 
@@ -18,13 +20,32 @@ import { GLASS, PROGRESSIVE_BLUR } from "./glass";
 export function Stage() {
   /** Recording mode: F hides the floating step runner and sidebar button, F again brings them back. */
   const [chromeHidden, setChromeHidden] = useState(false);
+  useCallSounds();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "f" || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
-      // typing an F into a field (the POS search, a note) isn't a shortcut
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      // typing an F or a digit into a field (the POS search, a note, a phone number) isn't a shortcut
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
-      setChromeHidden((v) => !v);
+      if (e.key.toLowerCase() === "f") setChromeHidden((v) => !v);
+      // 2: a guest at the next seated table calls for a waiter (until the phone has its own button)
+      else if (e.key === "2") {
+        const { phase, tables, dispatch } = useSim.getState();
+        const table = getPhase(phase).features.callWaiter ? nextCaller(tables) : undefined;
+        if (table) dispatch({ type: "customer/call-waiter", tableId: table.id, at: Date.now() });
+      }
+      // 3: the next table already calling rings again, in the same floor order
+      else if (e.key === "3") {
+        const { phase, tables, dispatch } = useSim.getState();
+        const table = getPhase(phase).features.callWaiter ? nextRecaller(tables) : undefined;
+        if (table) dispatch({ type: "customer/call-again", tableId: table.id, at: Date.now() });
+      }
+      // 4: the next table with an open call, floor order, cancels it
+      else if (e.key === "4") {
+        const { phase, tables, dispatch } = useSim.getState();
+        const table = getPhase(phase).features.callWaiter ? nextDismisser(tables) : undefined;
+        if (table) dispatch({ type: "customer/dismiss-call", tableId: table.id, at: Date.now() });
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
